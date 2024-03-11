@@ -1,0 +1,258 @@
+---
+title: "Summarising_sps_rereads and Species pcr data"
+author: "dkisakye"
+date: "2023-09-18"
+output:
+  html_document:
+    toc: yes
+  toc: default
+---
+
+ 
+```{r cleanup, warning=FALSE, error=FALSE, message=FALSE}
+# Clean environment
+rm(list=ls(all=TRUE))
+
+# Unload packages
+if (!is.null(names(utils::sessionInfo()[["otherPkgs"]]))) pacman::p_unload("all")
+```
+
+
+```{r packages, warning=FALSE, error=FALSE, message=FALSE}
+library(haven)
+library(dplyr) 
+library(tidyverse)
+library(readxl)
+```
+
+
+### Import set 1 of reread slides
+```{r}
+microscopy_rereads_set1_rep1 <- read_xlsx("../../slide_re_reads/LLNEUP_Microscopy_read_results.xlsx", sheet = "LLN2-12months_BS_First_Read") %>% 
+  select(`Study ID`, `Parasite density`, `Quality of slide`) %>% 
+  rename(Parasite_density_Rep1 = `Parasite density`,
+         Species_Rep1 = `Quality of slide`)
+
+microscopy_rereads_set1_rep2 <-
+  read_xlsx("../../../Hrp2:3/slide_re_reads/LLNEUP_Microscopy_read_results.xlsx",sheet = "LLN2-12months_BS_Second_Read") %>% 
+   select(`Study ID`, `Parasite density`, `Quality of slide`) %>% 
+    rename(Parasite_density_Rep2 = `Parasite density`,
+         Species_Rep2 = `Quality of slide`)
+
+
+
+microscopy_rereads_1 <- merge(microscopy_rereads_set1_rep1, microscopy_rereads_set1_rep2, by.x = "Study ID" , by.y = "Study ID", all.x = TRUE, all.y = TRUE ) %>% 
+  mutate(QC = case_when(
+    Parasite_density_Rep1 > 1 & Parasite_density_Rep2 > 1 & Species_Rep1 == "non_p.f" &   Species_Rep2 == "non_p.f" ~ "non_p.f",
+    Parasite_density_Rep1 > 1 & Parasite_density_Rep2 >1 & is.na(Species_Rep1) &      Species_Rep2 == "non_p.f" ~ "Discordant",
+  Parasite_density_Rep1 > 1 & Parasite_density_Rep2 > 1 & Species_Rep1 == "mixed_infection" &  Species_Rep2 == "mixed_infection" ~ "mixed_infection",
+   Parasite_density_Rep1 > 1 & Parasite_density_Rep2 >1 & is.na(Species_Rep1)&      Species_Rep2 == "mixed_infection" ~ "Discordant",
+   Parasite_density_Rep1 > 1 & Parasite_density_Rep2 >1 & Species_Rep1 =="mixed_infection" &  is.na(Species_Rep2) ~ "Discordant",
+  Parasite_density_Rep1 > 1 & Parasite_density_Rep2 >1 & Species_Rep1 == "non_p.f" &  is.na(Species_Rep2) ~ "Discordant",
+  Parasite_density_Rep1 < 1 & Parasite_density_Rep2 <1 & is.na(Species_Rep1)  &  is.na(Species_Rep2) ~ "false positive by microscopy",
+  is.na(Parasite_density_Rep1) & Parasite_density_Rep2 < 1  & is.na(Species_Rep1) & is.na(Species_Rep2) ~ "false positive by microscopy",
+Parasite_density_Rep1 > 1 & Parasite_density_Rep2 > 1 & is.na(Species_Rep1)  &  is.na(Species_Rep2) ~ "possible Pf"
+  ))
+   
+
+microscopy_rereads_1 <- microscopy_rereads_1 %>%
+  rename(  Barcode = `Study ID`)
+
+```
+
+### Import Set 2 of reread slides
+```{r}
+microscopy_rereads_set2_rep1<-read_xlsx("../../../Hrp2:3/slide_re_reads/LLNEUP_Microscopy_read_results.xlsx", sheet = "LLN2-12months_BS_First_Read_S2") %>% 
+  select(`Barcode`, `Parasite density`, `Quality of slide`) %>% 
+  rename(Parasite_density_Rep1 = `Parasite density`,
+         Species_Rep1 = `Quality of slide`)
+
+microscopy_rereads_set2_rep2<-read_xlsx("../../../Hrp2:3/slide_re_reads/LLNEUP_Microscopy_read_results.xlsx", sheet = "LLN2-12months_BS_Second_Read_S2") %>% 
+  select(`Barcode`, `Parasite density`, `Quality of slide`) %>% 
+  rename(Parasite_density_Rep2 = `Parasite density`,
+         Species_Rep2 = `Quality of slide`)
+
+microscopy_rereads_2 <- merge(microscopy_rereads_set2_rep1, microscopy_rereads_set2_rep2, by.x = "Barcode" , by.y = "Barcode", all.x = TRUE, all.y = TRUE ) %>% 
+  mutate(QC = case_when(
+    Parasite_density_Rep1 > 1 & Parasite_density_Rep2 > 1 & Species_Rep1 == "non_p.f" &   Species_Rep2 == "non_p.f" ~ "non_p.f",
+    Parasite_density_Rep1 > 1 & Parasite_density_Rep2 >1 & is.na(Species_Rep1) &      Species_Rep2 == "non_p.f" ~ "Discordant",
+  Parasite_density_Rep1 > 1 & Parasite_density_Rep2 > 1 & Species_Rep1 == "mixed_infection" &  Species_Rep2 == "mixed_infection" ~ "mixed_infection",
+   Parasite_density_Rep1 > 1 & Parasite_density_Rep2 >1 & is.na(Species_Rep1)&      Species_Rep2 == "mixed_infection" ~ "Discordant",
+   Parasite_density_Rep1 > 1 & Parasite_density_Rep2 >1 & Species_Rep1 =="mixed_infection" &  is.na(Species_Rep2) ~ "Discordant",
+  Parasite_density_Rep1 > 1 & Parasite_density_Rep2 >1 & Species_Rep1 == "non_p.f" &  is.na(Species_Rep2) ~ "Discordant",
+  Parasite_density_Rep1 < 1 & Parasite_density_Rep2 <1 & is.na(Species_Rep1)  &  is.na(Species_Rep2) ~ "false positive by microscopy",
+  is.na(Parasite_density_Rep1) & Parasite_density_Rep2 < 1  & is.na(Species_Rep1) & is.na(Species_Rep2) ~ "false positive by microscopy",
+Parasite_density_Rep1 > 1 & Parasite_density_Rep2 > 1 & is.na(Species_Rep1)  &  is.na(Species_Rep2) ~ "possible Pf"
+  ))
+  
+
+```
+
+### Import Set 3 of reread slides
+```{r}
+microscopy_rereads_set3_rep1<-read_xlsx("../../../Hrp2:3/slide_re_reads/LLNEUP_Microscopy_read_results.xlsx", sheet = "LLN2-24months_BS_First_Read") %>% 
+  select(`Barcode`, `Parasite density`, `Quality of slide`) %>% 
+  rename(Parasite_density_Rep1 = `Parasite density`,
+         Species_Rep1 = `Quality of slide`)
+
+microscopy_rereads_set3_rep2<-read_xlsx("../../../Hrp2:3/slide_re_reads/LLNEUP_Microscopy_read_results.xlsx", sheet = "LLN2-24months_BS_Second_read") %>% 
+  select(`Barcode`, `Parasite density`, `Quality of slide`) %>% 
+  rename(Parasite_density_Rep2 = `Parasite density`,
+         Species_Rep2 = `Quality of slide`)
+
+microscopy_rereads_3 <- merge(microscopy_rereads_set3_rep1, microscopy_rereads_set3_rep2, by.x = "Barcode" , by.y = "Barcode", all.x = TRUE, all.y = TRUE ) %>% 
+  mutate(QC = case_when(
+    Parasite_density_Rep1 > 1 & Parasite_density_Rep2 > 1 & Species_Rep1 == "non_p.f" &   Species_Rep2 == "non_p.f" ~ "non_p.f",
+    Parasite_density_Rep1 > 1 & Parasite_density_Rep2 >1 & is.na(Species_Rep1) &      Species_Rep2 == "non_p.f" ~ "Discordant",
+  Parasite_density_Rep1 > 1 & Parasite_density_Rep2 > 1 & Species_Rep1 == "mixed_infection" &  Species_Rep2 == "mixed_infection" ~ "mixed_infection",
+   Parasite_density_Rep1 > 1 & Parasite_density_Rep2 >1 & is.na(Species_Rep1)&      Species_Rep2 == "mixed_infection" ~ "Discordant",
+   Parasite_density_Rep1 > 1 & Parasite_density_Rep2 >1 & Species_Rep1 =="mixed_infection" &  is.na(Species_Rep2) ~ "Discordant",
+  Parasite_density_Rep1 > 1 & Parasite_density_Rep2 >1 & Species_Rep1 == "non_p.f" &  is.na(Species_Rep2) ~ "Discordant",
+  Parasite_density_Rep1 < 1 & Parasite_density_Rep2 <1 & is.na(Species_Rep1)  &  is.na(Species_Rep2) ~ "false positive by microscopy",
+  is.na(Parasite_density_Rep1) & Parasite_density_Rep2 < 1  & is.na(Species_Rep1) & is.na(Species_Rep2) ~ "false positive by microscopy",
+Parasite_density_Rep1 > 1 & Parasite_density_Rep2 > 1 & is.na(Species_Rep1)  &  is.na(Species_Rep2) ~ "possible Pf"
+  ))
+
+
+
+```
+
+### Bind in all Species  data 
+```{r}
+all_sps_results <- rbind(microscopy_rereads_1, microscopy_rereads_2, microscopy_rereads_3)
+
+all_sps_results <- all_sps_results %>% 
+  rename(Overall_call_slide_reread = QC)
+
+
+# Get no. of distinct ids
+distinct_ids <-distinct(all_sps_results, Barcode)
+
+length(distinct_ids$Barcode) # 75
+
+
+#all_sps_results_summary <- all_sps_results %>% 
+  # filter(!is.na(Parasite_density_Rep1)) %>% 
+  #group_by(QC) %>% 
+  #summarise(median_parasite_density = median(Parasite_density_Rep1),
+   #         max_parasite_density = max(Parasite_density_Rep1),
+    #        n= n()                       )
+
+
+# merge with var_ATS results
+
+var_ATS_data <- read_csv("../../data_out/var_ATS_neg_RDT_Neg_RDT_Pos_LLN2_04032023.csv")
+
+var_ATS_data <- var_ATS_data %>% 
+  transmute(rdtrslt, BSdich,  parasitedensity_microscopy = parasitedensity, Quantity_by_qpcr = Quantity,
+            Barcode, fpbarcode1)
+
+all_sps_results_merge <- var_ATS_data %>% 
+  left_join(all_sps_results, join_by(fpbarcode1 == `Barcode`))
+
+
+all_sps_results_merge$Barcode <- as.character(all_sps_results_merge$Barcode)
+```
+
+
+
+### Import Species pcr results
+```{r}
+sps_pcr <- read_csv("../../species_pcr/varATS_neg_LN2_samples_spp_gel_layout&results_calls - spp_results_calls.csv")
+
+sps_pcr <- sps_pcr %>% 
+  transmute(Barcode = `Samples/Controls`, Pf, Pm, Po, Pv) 
+
+sps_pcr<-sps_pcr[6:81, ]
+
+
+# Create a summary table of the species results
+
+#number_of_non_pf_sps <- colSums(sps_pcr[2:5])
+
+#summary_table_sps <- data.frame(
+ # species = names(sps_pcr)[2:5],
+  #number = number_of_non_pf_sps , row.names = NULL)
+
+sps_pcr_calls <- sps_pcr %>% 
+  mutate(Sps_call = case_when(
+    Pf== 0 & Pm == 0 &Po == 0 & Pv == 0 ~ "false positive by microscopy",
+    Pf== 1 & Pm == 0 &Po == 0 & Pv == 0 ~ "Pf",
+    Pf== 0 & Pm == 1 &Po == 0 & Pv == 0  ~ "Pm",
+    Pf== 0 & Pm == 0 &Po == 1 & Pv == 0  ~ "Po",
+    Pf== 1 & Pm == 1 &Po == 0 & Pv == 0 ~ "mixed_infection",
+    Pf== 1 & Pm == 0 &Po == 1 & Pv == 0 ~ "mixed_infection",
+    Pf== 1 & Pm == 1 &Po == 1 & Pv == 0 ~ "mixed_infection",
+    Pf== 0 & Pm == 1 &Po == 1 & Pv == 0 ~ "mixed_infection",
+    TRUE~ NA
+  ))
+
+# double check that every observation has been classified
+
+any(is.na(sps_pcr_calls$Sps_call)) # FALSE. All observations have been classified
+
+sps_pcr_calls$Sps_call <- factor(sps_pcr_calls$Sps_call)
+
+summary_sps_calls <- sps_pcr_calls %>% 
+  count(Sps_call)
+
+# Save sps calls
+
+#write_csv(summary_sps_calls, "../../data_out/Summary_table_Species_calls.csv")
+
+#write_csv(sps_pcr_calls, "../../data_out/All_species_pcr_calls.csv")
+
+```
+
+### Merge species pcr data with slide re-read data to check concordance
+```{r}
+
+sps_pcr_calls_2<- sps_pcr_calls %>% 
+  mutate(Overall_call_pcr = case_when(
+  Sps_call == "Pm" | Sps_call == "Pv" | Sps_call == "Po" ~ "non_p.f", 
+  TRUE ~ Sps_call
+  ))
+
+mixed_infection_by_pcr <- sps_pcr_calls_2 %>% 
+  filter(Sps_call == "mixed_infection")
+
+
+merged_sps_pcr_slide_rereads <- sps_pcr_calls_2 %>% 
+  left_join(all_sps_results_merge, join_by(Barcode))
+
+merged_sps_pcr_slide_rereads_2 <- merged_sps_pcr_slide_rereads %>% 
+  mutate(Concordant = case_when(
+    Overall_call_pcr == Overall_call_slide_reread ~ 1,
+    Overall_call_pcr == "Pf" & Overall_call_slide_reread == "possible Pf" ~ 1,
+      TRUE~ 0))
+
+# Save results of slide rereads and pcr
+
+ write_csv(merged_sps_pcr_slide_rereads_2, "../../data_out/Merged_sps_pcr_and_slide_rereads_07_03_2024.csv")
+
+table(merged_sps_pcr_slide_rereads_2$Concordant)
+
+# let me look briefly at the discordant samples between re-reads and pcr
+
+
+Dicordant_by_pcr <- filter(merged_sps_pcr_slide_rereads_2, Concordant == 0)
+
+Dicordant_by_pcr_sub <-Dicordant_by_pcr %>% 
+  select(Barcode, Quantity_by_qpcr, Overall_call_pcr,  Overall_call_slide_reread, Concordant)
+
+Concordant_by_pcr <- filter(merged_sps_pcr_slide_rereads_2, Concordant == 1)
+
+Concordant_by_pcr_sub <- Concordant_by_pcr %>% 
+  select(Barcode, Quantity_by_qpcr, Overall_call_pcr, Overall_call_slide_reread, Concordant)
+
+```
+
+
+```{r print_date_and_time}
+Sys.time()
+```
+
+```{r print_session_info}
+# sessionInfo()
+devtools::session_info()
+```
