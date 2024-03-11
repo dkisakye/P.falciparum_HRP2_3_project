@@ -122,13 +122,13 @@ Parasite_density_Rep1 > 1 & Parasite_density_Rep2 > 1 & is.na(Species_Rep1)  &  
 all_sps_results <- rbind(microscopy_rereads_1, microscopy_rereads_2, microscopy_rereads_3)
 
 all_sps_results <- all_sps_results %>% 
-  rename(Overall_call_slide_reread = QC)
+  rename(Overall_call_slide_reread = QC, `Study Subject` = `Barcode` )
 
 
 # Get no. of distinct ids
-distinct_ids <-distinct(all_sps_results, Barcode)
+distinct_ids <-distinct(all_sps_results, `Study Subject`  )
 
-length(distinct_ids$Barcode) # 75
+length(distinct_ids$`Study Subject`) # 75
 
 
 #all_sps_results_summary <- all_sps_results %>% 
@@ -139,19 +139,19 @@ length(distinct_ids$Barcode) # 75
     #        n= n()                       )
 
 
-# merge with var_ATS results
+# merge with var_ATS results to get barcodes
 
-var_ATS_data <- read_csv("../../data_out/var_ATS_neg_RDT_Neg_RDT_Pos_LLN2_04032023.csv")
+var_ATS_data <- read_csv("../../data_in/all_LN2_qpcr.csv")
 
 var_ATS_data <- var_ATS_data %>% 
-  transmute(rdtrslt, BSdich,  parasitedensity_microscopy = parasitedensity, Quantity_by_qpcr = Quantity,
-            Barcode, fpbarcode1)
+  transmute(`Sample Name`, Quantity_by_qpcr = round(qpcr, 0),
+            `Study Subject`)
 
-all_sps_results_merge <- var_ATS_data %>% 
-  left_join(all_sps_results, join_by(fpbarcode1 == `Barcode`))
+all_sps_results_merge <- all_sps_results %>% 
+  left_join(var_ATS_data, join_by(`Study Subject`))
 
 
-all_sps_results_merge$Barcode <- as.character(all_sps_results_merge$Barcode)
+all_sps_results_merge$`Sample Name` <- as.character(all_sps_results_merge$`Sample Name`)
 ```
 
 
@@ -213,12 +213,14 @@ sps_pcr_calls_2<- sps_pcr_calls %>%
   TRUE ~ Sps_call
   ))
 
+
 mixed_infection_by_pcr <- sps_pcr_calls_2 %>% 
   filter(Sps_call == "mixed_infection")
 
 
+
 merged_sps_pcr_slide_rereads <- sps_pcr_calls_2 %>% 
-  left_join(all_sps_results_merge, join_by(Barcode))
+  left_join(all_sps_results_merge, join_by(Barcode == `Sample Name`))
 
 merged_sps_pcr_slide_rereads_2 <- merged_sps_pcr_slide_rereads %>% 
   mutate(Concordant = case_when(
@@ -226,9 +228,20 @@ merged_sps_pcr_slide_rereads_2 <- merged_sps_pcr_slide_rereads %>%
     Overall_call_pcr == "Pf" & Overall_call_slide_reread == "possible Pf" ~ 1,
       TRUE~ 0))
 
+
+# Study subject name for 4064903947 is missing. This is because the merging with varATS data was done with only samples for which slide re-reads were performed. This sample was not part of those. Let me add study subject manually
+
+missing_sample <- filter(var_ATS_data, `Sample Name` == "4064903947")
+
+if ("4064903947" %in% merged_sps_pcr_slide_rereads_2$Barcode){
+  data_missing_sample <- missing_sample
+  merged_sps_pcr_slide_rereads_2$`Study Subject`[merged_sps_pcr_slide_rereads_2$Barcode == "4064903947"] <- data_missing_sample$`Study Subject`
+
+}
+
 # Save results of slide rereads and pcr
 
- write_csv(merged_sps_pcr_slide_rereads_2, "../../data_out/Merged_sps_pcr_and_slide_rereads_07_03_2024.csv")
+# write_csv(merged_sps_pcr_slide_rereads_2, "../../data_out/Merged_sps_pcr_and_slide_rereads_07_03_2024.csv")
 
 table(merged_sps_pcr_slide_rereads_2$Concordant)
 

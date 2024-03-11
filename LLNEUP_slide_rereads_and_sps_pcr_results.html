@@ -13,7 +13,7 @@
 
 <meta name="date" content="2023-09-18" />
 
-<title>Summarising_sps_rereads and Species pcr data</title>
+<title>Summarising_sps_re-reads and Species pcr data</title>
 
 <script>// Pandoc 2.9 adds attributes on both header and div. We remove the former (to
 // be compatible with the behavior of Pandoc < 2.8).
@@ -350,7 +350,7 @@ display: none;
 
 
 
-<h1 class="title toc-ignore">Summarising_sps_rereads and Species pcr
+<h1 class="title toc-ignore">Summarising_sps_re-reads and Species pcr
 data</h1>
 <h4 class="author">dkisakye</h4>
 <h4 class="date">2023-09-18</h4>
@@ -359,11 +359,11 @@ data</h1>
 
 <div id="TOC">
 <ul>
-<li><a href="#import-set-1-of-reread-slides" id="toc-import-set-1-of-reread-slides">Import set 1 of reread
+<li><a href="#import-set-1-of-re-read-slides" id="toc-import-set-1-of-re-read-slides">Import set 1 of re-read
 slides</a></li>
-<li><a href="#import-set-2-of-reread-slides" id="toc-import-set-2-of-reread-slides">Import Set 2 of reread
+<li><a href="#import-set-2-of-re-read-slides" id="toc-import-set-2-of-re-read-slides">Import Set 2 of re-read
 slides</a></li>
-<li><a href="#import-set-3-of-reread-slides" id="toc-import-set-3-of-reread-slides">Import Set 3 of reread
+<li><a href="#import-set-3-of-re-read-slides" id="toc-import-set-3-of-re-read-slides">Import Set 3 of re-read
 slides</a></li>
 <li><a href="#bind-in-all-species-data" id="toc-bind-in-all-species-data">Bind in all Species data</a></li>
 <li><a href="#import-species-pcr-results" id="toc-import-species-pcr-results">Import Species pcr results</a></li>
@@ -381,8 +381,8 @@ if (!is.null(names(utils::sessionInfo()[[&quot;otherPkgs&quot;]]))) pacman::p_un
 library(dplyr) 
 library(tidyverse)
 library(readxl)</code></pre>
-<div id="import-set-1-of-reread-slides" class="section level3">
-<h3>Import set 1 of reread slides</h3>
+<div id="import-set-1-of-re-read-slides" class="section level3">
+<h3>Import set 1 of re-read slides</h3>
 <pre class="r"><code>microscopy_rereads_set1_rep1 &lt;- read_xlsx(&quot;../../slide_re_reads/LLNEUP_Microscopy_read_results.xlsx&quot;, sheet = &quot;LLN2-12months_BS_First_Read&quot;) %&gt;% 
   select(`Study ID`, `Parasite density`, `Quality of slide`) %&gt;% 
   rename(Parasite_density_Rep1 = `Parasite density`,
@@ -413,8 +413,8 @@ Parasite_density_Rep1 &gt; 1 &amp; Parasite_density_Rep2 &gt; 1 &amp; is.na(Spec
 microscopy_rereads_1 &lt;- microscopy_rereads_1 %&gt;%
   rename(  Barcode = `Study ID`)</code></pre>
 </div>
-<div id="import-set-2-of-reread-slides" class="section level3">
-<h3>Import Set 2 of reread slides</h3>
+<div id="import-set-2-of-re-read-slides" class="section level3">
+<h3>Import Set 2 of re-read slides</h3>
 <pre class="r"><code>microscopy_rereads_set2_rep1&lt;-read_xlsx(&quot;../../../Hrp2:3/slide_re_reads/LLNEUP_Microscopy_read_results.xlsx&quot;, sheet = &quot;LLN2-12months_BS_First_Read_S2&quot;) %&gt;% 
   select(`Barcode`, `Parasite density`, `Quality of slide`) %&gt;% 
   rename(Parasite_density_Rep1 = `Parasite density`,
@@ -438,8 +438,8 @@ microscopy_rereads_2 &lt;- merge(microscopy_rereads_set2_rep1, microscopy_reread
 Parasite_density_Rep1 &gt; 1 &amp; Parasite_density_Rep2 &gt; 1 &amp; is.na(Species_Rep1)  &amp;  is.na(Species_Rep2) ~ &quot;possible Pf&quot;
   ))</code></pre>
 </div>
-<div id="import-set-3-of-reread-slides" class="section level3">
-<h3>Import Set 3 of reread slides</h3>
+<div id="import-set-3-of-re-read-slides" class="section level3">
+<h3>Import Set 3 of re-read slides</h3>
 <pre class="r"><code>microscopy_rereads_set3_rep1&lt;-read_xlsx(&quot;../../../Hrp2:3/slide_re_reads/LLNEUP_Microscopy_read_results.xlsx&quot;, sheet = &quot;LLN2-24months_BS_First_Read&quot;) %&gt;% 
   select(`Barcode`, `Parasite density`, `Quality of slide`) %&gt;% 
   rename(Parasite_density_Rep1 = `Parasite density`,
@@ -468,13 +468,13 @@ Parasite_density_Rep1 &gt; 1 &amp; Parasite_density_Rep2 &gt; 1 &amp; is.na(Spec
 <pre class="r"><code>all_sps_results &lt;- rbind(microscopy_rereads_1, microscopy_rereads_2, microscopy_rereads_3)
 
 all_sps_results &lt;- all_sps_results %&gt;% 
-  rename(Overall_call_slide_reread = QC)
+  rename(Overall_call_slide_reread = QC, `Study Subject` = `Barcode` )
 
 
 # Get no. of distinct ids
-distinct_ids &lt;-distinct(all_sps_results, Barcode)
+distinct_ids &lt;-distinct(all_sps_results, `Study Subject`  )
 
-length(distinct_ids$Barcode) # 75</code></pre>
+length(distinct_ids$`Study Subject`) # 75</code></pre>
 <pre><code>## [1] 75</code></pre>
 <pre class="r"><code>#all_sps_results_summary &lt;- all_sps_results %&gt;% 
   # filter(!is.na(Parasite_density_Rep1)) %&gt;% 
@@ -484,26 +484,26 @@ length(distinct_ids$Barcode) # 75</code></pre>
     #        n= n()                       )
 
 
-# merge with var_ATS results
+# merge with var_ATS results to get barcodes
 
-var_ATS_data &lt;- read_csv(&quot;../../data_out/var_ATS_neg_RDT_Neg_RDT_Pos_LLN2_04032023.csv&quot;)</code></pre>
-<pre><code>## Rows: 76 Columns: 11
+var_ATS_data &lt;- read_csv(&quot;../../data_in/all_LN2_qpcr.csv&quot;)</code></pre>
+<pre><code>## Rows: 4155 Columns: 9
 ## ── Column specification ────────────────────────────────────────────────────────
 ## Delimiter: &quot;,&quot;
-## chr (4): fpbarcode1, Study Subject, DateRun, StudyType
-## dbl (7): rdtrslt, BSdich, parasitedensity, Sample ID, Barcode, Quantity, Pla...
+## chr (5): Well Position, Task, name, Amp Status, Study Subject
+## dbl (4): Well, Ct Threshold, Sample Name, qpcr
 ## 
 ## ℹ Use `spec()` to retrieve the full column specification for this data.
 ## ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.</code></pre>
 <pre class="r"><code>var_ATS_data &lt;- var_ATS_data %&gt;% 
-  transmute(rdtrslt, BSdich,  parasitedensity_microscopy = parasitedensity, Quantity_by_qpcr = Quantity,
-            Barcode, fpbarcode1)
+  transmute(`Sample Name`, Quantity_by_qpcr = round(qpcr, 0),
+            `Study Subject`)
 
-all_sps_results_merge &lt;- var_ATS_data %&gt;% 
-  left_join(all_sps_results, join_by(fpbarcode1 == `Barcode`))
+all_sps_results_merge &lt;- all_sps_results %&gt;% 
+  left_join(var_ATS_data, join_by(`Study Subject`))
 
 
-all_sps_results_merge$Barcode &lt;- as.character(all_sps_results_merge$Barcode)</code></pre>
+all_sps_results_merge$`Sample Name` &lt;- as.character(all_sps_results_merge$`Sample Name`)</code></pre>
 </div>
 <div id="import-species-pcr-results" class="section level3">
 <h3>Import Species pcr results</h3>
@@ -567,12 +567,14 @@ concordance</h3>
   TRUE ~ Sps_call
   ))
 
+
 mixed_infection_by_pcr &lt;- sps_pcr_calls_2 %&gt;% 
   filter(Sps_call == &quot;mixed_infection&quot;)
 
 
+
 merged_sps_pcr_slide_rereads &lt;- sps_pcr_calls_2 %&gt;% 
-  left_join(all_sps_results_merge, join_by(Barcode))
+  left_join(all_sps_results_merge, join_by(Barcode == `Sample Name`))
 
 merged_sps_pcr_slide_rereads_2 &lt;- merged_sps_pcr_slide_rereads %&gt;% 
   mutate(Concordant = case_when(
@@ -580,15 +582,26 @@ merged_sps_pcr_slide_rereads_2 &lt;- merged_sps_pcr_slide_rereads %&gt;%
     Overall_call_pcr == &quot;Pf&quot; &amp; Overall_call_slide_reread == &quot;possible Pf&quot; ~ 1,
       TRUE~ 0))
 
+
+# Study subject name for 4064903947 is missing. This is because the merging with varATS data was done with only samples for which slide rereads were performed. This sample was not part of those. Let me add study subject manually
+
+missing_sample &lt;- filter(var_ATS_data, `Sample Name` == &quot;4064903947&quot;)
+
+if (&quot;4064903947&quot; %in% merged_sps_pcr_slide_rereads_2$Barcode){
+  data_missing_sample &lt;- missing_sample
+  merged_sps_pcr_slide_rereads_2$`Study Subject`[merged_sps_pcr_slide_rereads_2$Barcode == &quot;4064903947&quot;] &lt;- data_missing_sample$`Study Subject`
+
+}
+
 # Save results of slide rereads and pcr
 
- write_csv(merged_sps_pcr_slide_rereads_2, &quot;../../data_out/Merged_sps_pcr_and_slide_rereads_07_03_2024.csv&quot;)
+# write_csv(merged_sps_pcr_slide_rereads_2, &quot;../../data_out/Merged_sps_pcr_and_slide_rereads_07_03_2024.csv&quot;)
 
 table(merged_sps_pcr_slide_rereads_2$Concordant)</code></pre>
 <pre><code>## 
 ##  0  1 
 ## 32 44</code></pre>
-<pre class="r"><code># let me look briefly at the discordant samples between re-reads and pcr
+<pre class="r"><code># let me look briefly at the discordant samples between rereads and pcr
 
 
 Dicordant_by_pcr &lt;- filter(merged_sps_pcr_slide_rereads_2, Concordant == 0)
@@ -601,7 +614,7 @@ Concordant_by_pcr &lt;- filter(merged_sps_pcr_slide_rereads_2, Concordant == 1)
 Concordant_by_pcr_sub &lt;- Concordant_by_pcr %&gt;% 
   select(Barcode, Quantity_by_qpcr, Overall_call_pcr, Overall_call_slide_reread, Concordant)</code></pre>
 <pre class="r"><code>Sys.time()</code></pre>
-<pre><code>## [1] &quot;2024-03-08 09:37:30 EAT&quot;</code></pre>
+<pre><code>## [1] &quot;2024-03-11 13:27:05 EAT&quot;</code></pre>
 <pre class="r"><code># sessionInfo()
 devtools::session_info()</code></pre>
 <pre><code>## ─ Session info ───────────────────────────────────────────────────────────────
@@ -614,7 +627,7 @@ devtools::session_info()</code></pre>
 ##  collate  en_US.UTF-8
 ##  ctype    en_US.UTF-8
 ##  tz       Africa/Kampala
-##  date     2024-03-08
+##  date     2024-03-11
 ##  pandoc   3.1.1 @ /Applications/RStudio.app/Contents/Resources/app/quarto/bin/tools/ (via rmarkdown)
 ## 
 ## ─ Packages ───────────────────────────────────────────────────────────────────
