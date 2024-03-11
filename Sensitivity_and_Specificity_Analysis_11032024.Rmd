@@ -1,0 +1,187 @@
+---
+title: "Sensitivity and Specificity analysis"
+author: "dkisakye"
+date: "2024-02-05"
+output:
+  html_document:
+    toc: yes
+  toc: default
+---
+
+## Objective
+Perform sensitiviy and specificity analysis on samples from the LineUp 12 study 
+
+```{r cleanup, warning=FALSE, error=FALSE, message=FALSE}
+# Clean environment
+rm(list=ls(all=TRUE))
+
+# Unload packages
+if (!is.null(names(utils::sessionInfo()[["otherPkgs"]]))) pacman::p_unload("all")
+```
+
+### Load packages
+```{r packages, warning=FALSE, error=FALSE, message=FALSE}
+library(haven)
+library(dplyr) 
+library(tidyverse)
+library(readxl)
+library(writexl)
+library(reshape2)
+library(readr)
+library(caret)
+library(pROC)
+library(readstata13)
+
+```
+
+
+
+### Sensitivity analysis using the entire LineUP2 12 months survey samples
+```{r, sensitivity}
+
+#Household_data_12 <- read.dta13("../../../LineUP2/Household member level data 12 month survey_FINAL.dta", convert.factors = TRUE, generate.factors = TRUE,
+                         # encoding = "UTF-8", fromEncoding = NULL, convert.underscore = #FALSE,
+                         # missing.type = TRUE, convert.dates = TRUE, replace.strl = TRUE,
+                         # add.rownames = FALSE, nonint.factors = TRUE, select.rows = NULL,
+                         # select.cols = NULL, strlexport = FALSE, strlpath = ".") %>%
+
+Household_data_12 <-read_dta("../../../LineUP2/Household member level data 12 month survey_FINAL.dta")
+
+# Take a look at a summary of the rdt and bs data
+ table(Household_data_12$rdtrslt) # rdt result not available/not done for some
+ 
+ table(Household_data_12$BSdich)
+ 
+# First filter to keep only observations where rdt and bs were done
+ Household_data_12_trim <-Household_data_12 %>% 
+   filter(rdtdone == 1 & BSdone == 1)
+ 
+ # Convert rdt result and blood smear microscopy result to factors
+
+Household_data_12_trim$rdtrslt <- factor(Household_data_12_trim$rdtrslt, levels = c(1,0))
+
+Household_data_12_trim$BSdich <- factor(Household_data_12_trim$BSdich, levels = c(1,0)) 
+ 
+
+sensitivity_by_bs <-round(sensitivity(Household_data_12_trim$rdtrslt, Household_data_12_trim$BSdich, positive = levels(Household_data_12_trim$BSdich)[1]) * 100, 0) # 100
+
+sensitivity_by_bs # 91
+
+# Double check manually
+
+true_pos <- filter(Household_data_12_trim, rdtrslt == 1 & BSdich == 1)
+ 
+false_neg <- filter(Household_data_12_trim, rdtrslt == 0 & BSdich == 1 )
+
+sensitivity_check_bs <- round(nrow(true_pos)/(nrow(true_pos) + nrow(false_neg)) * 100, 0)
+
+sensitivity_check_bs # Also 91
+
+# positive predictive value of RDTs with microscopy as gold standard
+
+pos_Pred_bs <- round(posPredValue(Household_data_12_trim$rdtrslt, Household_data_12_trim$BSdich, positive = levels(Household_data_12_trim$BSdich)[1])*100, 0) # 47
+
+pos_Pred_bs
+
+```
+
+### Sensitivity analysis using the random samples with qpcr as gold standard
+```{r}
+# Import list of random samples
+
+Random_samples <- read_csv("../../data_in/completely_random_LN2_sample.csv")
+
+
+# Merge Random samples with var ATS Qpcr data
+
+var_ATS_data <- read_csv("../../data_in/all_LN2_qpcr.csv")
+
+ All_Random_samples<- Random_samples %>% 
+  left_join(var_ATS_data, by= join_by(fpbarcode1 == `Study Subject`))
+ 
+ # Create a new variable categorical variable for qpcr result
+ All_Random_samples$qpcr <- round(All_Random_samples$qpcr, 0)
+ All_Random_samples$Qpcr_result <- ifelse(All_Random_samples$qpcr <= 1, 0, 1)
+ 
+
+ # Convert variables of interest to factors
+All_Random_samples$rdtrslt <- factor(All_Random_samples$rdtrslt, levels = c(1,0))
+All_Random_samples$BSdich <- factor(All_Random_samples$BSdich, levels = c(1,0))
+All_Random_samples$Qpcr_result <- factor(All_Random_samples$Qpcr_result, levels = c(1,0))
+ 
+# Sensitivity
+sensitivity_by_qpcr <-round(sensitivity(All_Random_samples$rdtrslt, All_Random_samples$Qpcr_result, positive = levels(All_Random_samples$Qpcr_result)[1]) * 100, 0)
+
+sensitivity_by_qpcr # 92
+
+# Positive predictive value of rdt with qpcr as gold standard
+
+pos_Pred_qpcr <- round(posPredValue(All_Random_samples$rdtrslt, All_Random_samples$Qpcr_result, positive = levels(All_Random_samples$Qpcr_result)[1])*100, 0) # 64
+
+pos_Pred_qpcr
+
+```
+
+### Specificity using random samples
+* With Microscopy as gold standard
+* With qPCR as gold standard
+```{r, specificity}
+# With Microscopy as gold standard
+
+spec_by_bs <- round(specificity( All_Random_samples$rdtrslt, All_Random_samples$BSdich, negative = levels(All_Random_samples$BSdich)[-1])* 100, 0) # 56
+
+spec_by_bs
+
+neg_Pred_by_bs <- round(negPredValue( All_Random_samples$rdtrslt, All_Random_samples$BSdich, negative = levels(All_Random_samples$BSdich)[-1])* 100, 0) # 95 
+neg_Pred_by_bs 
+
+
+# Double checking manually
+
+true_neg <- filter (All_Random_samples,  rdtrslt == 0 & BSdich == 0 )
+
+false_pos <- filter(All_Random_samples, rdtrslt == 1 & BSdich == 0)
+
+specificity_check_by_bs <- round(nrow(true_neg)/(nrow(true_neg) + nrow(false_pos)) * 100, 0)
+
+specificity_check_by_bs
+
+
+# With qPCR as gold standard
+
+spec_by_qPCR <- round(specificity( All_Random_samples$rdtrslt, All_Random_samples$Qpcr_result, negative = levels(All_Random_samples$Qpcr_result)[-1])* 100, 0) # 
+
+spec_by_qPCR # 64
+
+# Negative predictive value by qPCR
+neg_Pred_by_qPCR <- round(negPredValue( All_Random_samples$rdtrslt, All_Random_samples$Qpcr_result, negative = levels(All_Random_samples$Qpcr_result)[-1])* 100, 0) # 
+
+neg_Pred_by_qPCR # 92
+```
+
+
+```{r, prevalence}
+# Prevalence of malaria in study pop based on Microscopy
+Prev <- (nrow(filter(All_Random_samples, BSdich == 1 )) / nrow(All_Random_samples)) 
+
+Prev # 31%
+
+confusionMatrix(data = All_Random_samples$rdtrslt,  reference = All_Random_samples$BSdich, positive = levels(All_Random_samples$BSdich)[1],
+                prevalence = Prev)
+
+
+```
+
+
+```{r}
+
+```
+
+```{r print_date_and_time}
+Sys.time()
+```
+
+```{r print_session_info}
+# sessionInfo()
+devtools::session_info()
+```
