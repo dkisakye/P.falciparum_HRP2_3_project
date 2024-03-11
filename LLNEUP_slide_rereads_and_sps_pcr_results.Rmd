@@ -1,5 +1,5 @@
 ---
-title: "Summarising_sps_rereads and Species pcr data"
+title: "Summarising_sps_re-reads and Species pcr data"
 author: "dkisakye"
 date: "2023-09-18"
 output:
@@ -26,7 +26,7 @@ library(readxl)
 ```
 
 
-### Import set 1 of reread slides
+### Import set 1 of re-read slides
 ```{r}
 microscopy_rereads_set1_rep1 <- read_xlsx("../../slide_re_reads/LLNEUP_Microscopy_read_results.xlsx", sheet = "LLN2-12months_BS_First_Read") %>% 
   select(`Study ID`, `Parasite density`, `Quality of slide`) %>% 
@@ -60,7 +60,7 @@ microscopy_rereads_1 <- microscopy_rereads_1 %>%
 
 ```
 
-### Import Set 2 of reread slides
+### Import Set 2 of re-read slides
 ```{r}
 microscopy_rereads_set2_rep1<-read_xlsx("../../../Hrp2:3/slide_re_reads/LLNEUP_Microscopy_read_results.xlsx", sheet = "LLN2-12months_BS_First_Read_S2") %>% 
   select(`Barcode`, `Parasite density`, `Quality of slide`) %>% 
@@ -88,7 +88,7 @@ Parasite_density_Rep1 > 1 & Parasite_density_Rep2 > 1 & is.na(Species_Rep1)  &  
 
 ```
 
-### Import Set 3 of reread slides
+### Import Set 3 of re-read slides
 ```{r}
 microscopy_rereads_set3_rep1<-read_xlsx("../../../Hrp2:3/slide_re_reads/LLNEUP_Microscopy_read_results.xlsx", sheet = "LLN2-24months_BS_First_Read") %>% 
   select(`Barcode`, `Parasite density`, `Quality of slide`) %>% 
@@ -229,7 +229,7 @@ merged_sps_pcr_slide_rereads_2 <- merged_sps_pcr_slide_rereads %>%
       TRUE~ 0))
 
 
-# Study subject name for 4064903947 is missing. This is because the merging with varATS data was done with only samples for which slide re-reads were performed. This sample was not part of those. Let me add study subject manually
+# Study subject name for 4064903947 is missing. This is because the merging with varATS data was done with only samples for which slide rereads were performed. This sample was not part of those. Let me add study subject manually
 
 missing_sample <- filter(var_ATS_data, `Sample Name` == "4064903947")
 
@@ -245,7 +245,7 @@ if ("4064903947" %in% merged_sps_pcr_slide_rereads_2$Barcode){
 
 table(merged_sps_pcr_slide_rereads_2$Concordant)
 
-# let me look briefly at the discordant samples between re-reads and pcr
+# let me look briefly at the discordant samples between rereads and pcr
 
 
 Dicordant_by_pcr <- filter(merged_sps_pcr_slide_rereads_2, Concordant == 0)
