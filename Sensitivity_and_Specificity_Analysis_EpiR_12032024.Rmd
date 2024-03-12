@@ -1,0 +1,177 @@
+---
+title: "Sensitivity and Specificity analysis using the epiR package"
+author: "dkisakye"
+date: "2024-03-12"
+output:
+  html_document:
+    toc: yes
+  toc: default
+---
+
+### Objective
+Perform sensitiviy and specificity analysis on samples from the LineUp 12 study 
+
+```{r cleanup, warning=FALSE, error=FALSE, message=FALSE}
+# Clean environment
+rm(list=ls(all=TRUE))
+
+# Unload packages
+if (!is.null(names(utils::sessionInfo()[["otherPkgs"]]))) pacman::p_unload("all")
+```
+
+### Load packages
+```{r packages, warning=FALSE, error=FALSE, message=FALSE}
+library(haven)
+library(dplyr) 
+library(tidyverse)
+library(readxl)
+library(writexl)
+library(reshape2)
+library(readr)
+library(readstata13)
+library(epiR)
+
+```
+
+
+
+### Sensitivity analysis using the entire LineUP2 12 months survey samples
+```{r}
+
+#Household_data_12 <- read.dta13("../../../LineUP2/Household member level data 12 month survey_FINAL.dta", convert.factors = TRUE, generate.factors = TRUE,
+                         # encoding = "UTF-8", fromEncoding = NULL, convert.underscore = #FALSE,
+                         # missing.type = TRUE, convert.dates = TRUE, replace.strl = TRUE,
+                         # add.rownames = FALSE, nonint.factors = TRUE, select.rows = NULL,
+                         # select.cols = NULL, strlexport = FALSE, strlpath = ".") %>%
+
+Household_data_12 <-read_dta("../../../LineUP2/Household member level data 12 month survey_FINAL.dta")
+
+# Take a look at a summary of the rdt and bs data
+ table(Household_data_12$rdtrslt) # rdt result not available/not done for some
+ 
+ table(Household_data_12$BSdich)
+ 
+# First filter to keep only observations where rdt and bs were done
+ Household_data_12_trim <-Household_data_12 %>% 
+   filter(rdtdone == 1 & BSdone == 1)
+ 
+ # Convert rdt result and blood smear microscopy result to factors
+
+Household_data_12_trim$rdtrslt <- factor(Household_data_12_trim$rdtrslt, levels = c(1,0))
+
+Household_data_12_trim$BSdich <- factor(Household_data_12_trim$BSdich, levels = c(1,0)) 
+ 
+
+true_pos_LLNEUP12 <- nrow(filter(Household_data_12_trim, rdtrslt == 1 & BSdich == 1))
+false_pos_LLNEUP12 <-nrow(filter(Household_data_12_trim, rdtrslt == 1 & BSdich == 0))
+false_neg_LLNEUP12 <-nrow(filter(Household_data_12_trim, rdtrslt == 0 & BSdich == 1))
+true_neg_LLNEUP12 <- nrow(filter(Household_data_12_trim, rdtrslt == 0 & BSdich == 0))
+
+positives_by_rdt_LLN12 <- filter(Household_data_12_trim, rdtrslt == 1 )
+ 
+
+# Calculate sensitivity
+  # create a matrix to display these data
+input_values_1 <- c(true_pos_LLNEUP12, false_pos_LLNEUP12, false_neg_LLNEUP12,true_neg_LLNEUP12 )
+
+matrix_1 <- as.table(matrix(input_values_1, nrow = 2, byrow = TRUE ))
+
+rownames(matrix_1) <- c(1,0)
+colnames(matrix_1) <-c(1,0)
+
+matrix_1
+
+Tests_1 <- epi.tests(matrix_1, conf.level = 0.95)
+
+Tests_1
+
+```
+
+### Sensitivity and specificty analysis using the random samples with qpcr as gold standard
+```{r}
+# Import list of random samples
+
+Random_samples <- read_csv("../../data_in/completely_random_LN2_sample.csv")
+
+
+# Merge Random samples with var ATS Qpcr data
+
+var_ATS_data <- read_csv("../../data_in/all_LN2_qpcr.csv")
+
+ All_Random_samples<- Random_samples %>% 
+  left_join(var_ATS_data, by= join_by(fpbarcode1 == `Study Subject`))
+ 
+ # Create a new variable categorical variable for qpcr result
+ All_Random_samples$qpcr <- round(All_Random_samples$qpcr, 0)
+ All_Random_samples$Qpcr_result <- ifelse(All_Random_samples$qpcr <= 1, 0, 1)
+ 
+
+ # Convert variables of interest to factors
+All_Random_samples$rdtrslt <- factor(All_Random_samples$rdtrslt, levels = c(1,0))
+All_Random_samples$BSdich <- factor(All_Random_samples$BSdich, levels = c(1,0))
+All_Random_samples$Qpcr_result <- factor(All_Random_samples$Qpcr_result, levels = c(1,0))
+ 
+
+true_pos_by_pcr <- nrow(filter(All_Random_samples, rdtrslt == 1 & Qpcr_result == 1))
+false_positives_by_pcr <-nrow(filter(All_Random_samples, rdtrslt == 1 & Qpcr_result == 0))
+false_neg_by_pcr <- nrow(filter(All_Random_samples, rdtrslt == 0 & Qpcr_result == 1))
+true_neg_by_pcr <- nrow(filter(All_Random_samples, rdtrslt == 0 & Qpcr_result == 0))
+
+positives_by_rdt_random <- nrow(filter(All_Random_samples, rdtrslt == 1 ))
+
+# Calculate sensitivity and specificity + confidence intervals with qpcr as gold standard
+
+input_values_2 <- c(true_pos_by_pcr, false_positives_by_pcr, false_neg_by_pcr,true_neg_by_pcr )
+
+matrix_2 <- as.table(matrix(input_values_2, nrow = 2, byrow = TRUE ))
+
+rownames(matrix_2) <- c(1,0)
+colnames(matrix_2) <-c(1,0)
+
+matrix_2
+
+Tests_2 <- epi.tests(matrix_2, conf.level = 0.95)
+
+Tests_2
+
+
+
+```
+
+### Sensitivity and specificity using random samples with microscopy as gold standard
+
+```{r}
+
+true_pos_random_bs <- nrow(filter (All_Random_samples,  rdtrslt == 1 & BSdich == 1 ))
+false_pos_random_bs<- nrow(filter(All_Random_samples, rdtrslt == 1 & BSdich == 0))
+false_neg_random_bs <- nrow(filter(All_Random_samples, rdtrslt == 0 & BSdich == 1))
+true_neg_random_bs <- nrow(filter (All_Random_samples,  rdtrslt == 0 & BSdich == 0 ))
+
+all_neg_random <-nrow(filter(All_Random_samples, rdtrslt == 0))
+
+
+# Calculate sensitivity and specificity + confidence intervals
+
+input_values_3 <-c(true_pos_random_bs, false_pos_random_bs, false_neg_random_bs, true_neg_random_bs)
+
+matrix_3 <-as.table(matrix(input_values_3, nrow = 2, byrow = TRUE ))
+
+rownames(matrix_3) <- c(1,0)
+colnames(matrix_3) <-c(1,0)
+
+matrix_3
+
+Tests_3 <- epi.tests(matrix_3, conf.level = 0.95)
+Tests_3
+
+
+```
+
+```{r print_date_and_time}
+Sys.time()
+```
+
+```{r print_session_info}
+# sessionInfo()
+devtools::session_info()
+```
