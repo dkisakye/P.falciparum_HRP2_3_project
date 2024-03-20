@@ -49,13 +49,13 @@ Household_data_12 <-read_dta("../../../LineUP2/Household member level data 12 mo
 Household_data_24 <-read_dta("../../../LineUP2/Household member level data 24 month survey_FINAL.dta")
 
 # Take a look at a summary of the rdt and bs data
- table(Household_data_12$rdtrslt) # rdt result not available/not done for some
+ table(Household_data_12$rdtdone) # rdt result not available/not done for some
  
- table(Household_data_12$BSdich)
+ table(Household_data_12$BSdone)
  
- table(Household_data_24$rdtrslt)
+ table(Household_data_24$rdtdone)
  
- table(Household_data_24$BSdich)
+ table(Household_data_24$BSdone)
  
 # First filter to keep only observations where rdt and bs were done
  Household_data_12_trim <-Household_data_12 %>% 
