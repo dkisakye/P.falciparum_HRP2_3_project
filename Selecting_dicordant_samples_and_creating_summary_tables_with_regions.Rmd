@@ -1,5 +1,5 @@
 ---
-title: "extracting LLINE 12 and LLINE 24 sample information"
+title: "Extracting LLINE 12 and LLINE 24 sample information"
 author: "dkisakye"
 date: "2023-05-24"
 output:
@@ -41,9 +41,7 @@ Household_data_12 <- read.dta13("../../../LineUP2/Household member level data 12
                          add.rownames = FALSE, nonint.factors = TRUE, select.rows = NULL,
                          select.cols = NULL, strlexport = FALSE, strlpath = ".") %>%
   filter(!is.na(uniqueid))
-  
- names(Household_data_12) 
- 
+
 
  # Number of participants enrolled
 unique_ids<- Household_data_12 %>% 
@@ -53,7 +51,7 @@ unique_ids<- Household_data_12 %>%
 
 ```
 
-### Now find the discordant samples ie BS positive and RDT negative
+## Now find the discordant samples ie BS positive and RDT negative
 ```{r }
 RDT_Neg_and_BS_pos_12 <- Household_data_12 %>%
                     select(rdtrslt, BSdich, parasitedensity, fpbarcode1)  %>%
@@ -106,7 +104,7 @@ all_discordant <- rbind(RDT_Neg_and_BS_pos_12, RDT_Neg_and_BS_pos_24)
 # write_csv(all_discordant, "../../data_out/Discordant_sample_list_LLINE12_LLNE24")
 ```
 
-##Summarising characteristics of the LLN12 and LLN24 discordant samples
+## Summarising characteristics of the LLN12 and LLN24 discordant samples
 ```{r}
 Characteristics_discordant_12 <- Household_data_12 %>%
   filter(rdtrslt == "Negative" & BSdich == "Positive") %>% 
@@ -166,8 +164,6 @@ Proportion_age_categories <-Characteristics_discordant_12_24_merged %>%
 # Make column for new age categories < 5, 5-10, >10 years
 
 Characteristics_discordant_12_24_merged$ageyrs <- round(Characteristics_discordant_12_24_merged$ageyrs, 0)
-
-range(Characteristics_discordant_12_24_merged$ageyrs)
 
 Characteristics_discordant_12_24_merged <- Characteristics_discordant_12_24_merged %>% 
   mutate(age_cat2 = case_when(
@@ -287,8 +283,8 @@ RDT_and_bs_done_12_24 <-nrow(filter_12) +nrow(filter_24)
 paste0("RDT and BS was performed on ", RDT_and_bs_done_12_24, " samples from LLN12 and LLN24 studies") # 9355
 ```
 
-## Total no. of BS pos  from LLN12 and LLN24
-## Total no. of RDT pos from LLN12 and LLN24
+### Total no. of BS pos  from LLN12 and LLN24
+### Total no. of RDT pos from LLN12 and LLN24
 ```{r}
 
 BS_pos_12 <- filter(Household_data_12, BSdich == "Positive")
