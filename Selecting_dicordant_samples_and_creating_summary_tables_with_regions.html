@@ -621,23 +621,23 @@ row.names = &quot;LN12 and 24&quot;
 both RDT and BS done</h2>
 <pre class="r"><code># convert to variables to factors
 Household_data_12 &lt;- Household_data_12 %&gt;% 
-  mutate(rdtdone = factor(case_when(
+  mutate(rdtdone = case_when(
                   rdtdone == &quot;No&quot; ~ 0,
                   rdtdone == &quot;Yes&quot; ~ 1,
-                  rdtdone == &quot;-9&quot; ~ as.numeric(rdtdone))),
+                  rdtdone == &quot;-9&quot; ~ NA_integer_ ),
           BSdone = factor(BSdone))
 
 
 filter_12 &lt;- Household_data_12 %&gt;% 
  filter(rdtdone == 1 &amp; BSdone == 1)
 
-print(nrow(filter_12)) # 4836 Rdt and BS done</code></pre>
-<pre><code>## [1] 4836</code></pre>
+print(nrow(filter_12)) # 3886 Rdt and BS done</code></pre>
+<pre><code>## [1] 3886</code></pre>
 <pre class="r"><code>Household_data_24 &lt;- Household_data_24 %&gt;% 
-  mutate(rdtdone = factor(case_when(
+  mutate(rdtdone = case_when(
                   rdtdone == &quot;No&quot; ~ 0,
                   rdtdone == &quot;Yes&quot; ~ 1,
-                  rdtdone == &quot;-9&quot; ~ as.numeric(rdtdone))),
+                  rdtdone == &quot;-9&quot; ~ NA_integer_),
          BSdone = factor(BSdone))
 
 Household_data_24$BSdone &lt;-factor(Household_data_24$BSdone)
@@ -646,11 +646,11 @@ filter_24 &lt;- Household_data_24 %&gt;%
   filter(rdtdone == 1 &amp; BSdone == 1 )
 
 print(nrow(filter_24))</code></pre>
-<pre><code>## [1] 4519</code></pre>
+<pre><code>## [1] 2467</code></pre>
 <pre class="r"><code>RDT_and_bs_done_12_24 &lt;-nrow(filter_12) +nrow(filter_24)
 
-paste0(&quot;RDT and BS was performed on &quot;, RDT_and_bs_done_12_24, &quot; samples from LLN12 and LLN24 studies&quot;) # 9355</code></pre>
-<pre><code>## [1] &quot;RDT and BS was performed on 9355 samples from LLN12 and LLN24 studies&quot;</code></pre>
+paste0(&quot;RDT and BS was performed on &quot;, RDT_and_bs_done_12_24, &quot; samples from LLN12 and LLN24 studies&quot;) # 6353</code></pre>
+<pre><code>## [1] &quot;RDT and BS was performed on 6353 samples from LLN12 and LLN24 studies&quot;</code></pre>
 <div id="total-no.-of-bs-pos-from-lln12-and-lln24" class="section level3">
 <h3>Total no. of BS pos from LLN12 and LLN24</h3>
 </div>
@@ -681,7 +681,7 @@ Prop_discordant_overall &lt;- round((nrow(RDT_Neg_and_BS_pos_12)+ nrow(RDT_Neg_a
 paste0(&quot; Proportion of RDT negative and BS positive samples in both LLN12 and LLN24 samples: &quot;, Prop_discordant_overall)</code></pre>
 <pre><code>## [1] &quot; Proportion of RDT negative and BS positive samples in both LLN12 and LLN24 samples: 6.2&quot;</code></pre>
 <pre class="r"><code>Sys.time()</code></pre>
-<pre><code>## [1] &quot;2024-03-20 12:42:27 EAT&quot;</code></pre>
+<pre><code>## [1] &quot;2024-03-20 13:04:34 EAT&quot;</code></pre>
 <pre class="r"><code># sessionInfo()
 devtools::session_info()</code></pre>
 <pre><code>## ─ Session info ───────────────────────────────────────────────────────────────

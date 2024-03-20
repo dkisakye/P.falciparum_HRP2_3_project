@@ -251,24 +251,24 @@ row.names = "LN12 and 24"
 
 # convert to variables to factors
 Household_data_12 <- Household_data_12 %>% 
-  mutate(rdtdone = factor(case_when(
+  mutate(rdtdone = case_when(
                   rdtdone == "No" ~ 0,
                   rdtdone == "Yes" ~ 1,
-                  rdtdone == "-9" ~ as.numeric(rdtdone))),
+                  rdtdone == "-9" ~ NA_integer_ ),
           BSdone = factor(BSdone))
 
 
 filter_12 <- Household_data_12 %>% 
  filter(rdtdone == 1 & BSdone == 1)
 
-print(nrow(filter_12)) # 4836 Rdt and BS done
+print(nrow(filter_12)) # 3886 Rdt and BS done
 
 
 Household_data_24 <- Household_data_24 %>% 
-  mutate(rdtdone = factor(case_when(
+  mutate(rdtdone = case_when(
                   rdtdone == "No" ~ 0,
                   rdtdone == "Yes" ~ 1,
-                  rdtdone == "-9" ~ as.numeric(rdtdone))),
+                  rdtdone == "-9" ~ NA_integer_),
          BSdone = factor(BSdone))
 
 Household_data_24$BSdone <-factor(Household_data_24$BSdone)
@@ -280,7 +280,7 @@ print(nrow(filter_24))
 
 RDT_and_bs_done_12_24 <-nrow(filter_12) +nrow(filter_24)
 
-paste0("RDT and BS was performed on ", RDT_and_bs_done_12_24, " samples from LLN12 and LLN24 studies") # 9355
+paste0("RDT and BS was performed on ", RDT_and_bs_done_12_24, " samples from LLN12 and LLN24 studies") # 6353
 ```
 
 ### Total no. of BS pos  from LLN12 and LLN24
