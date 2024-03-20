@@ -1,0 +1,335 @@
+---
+title: "extracting LLINE 12 and LLINE 24 sample information"
+author: "dkisakye"
+date: "2023-05-24"
+output:
+  html_document:
+    toc: yes
+  toc: default
+---
+
+## Objective
+* Select samples that are discordant from the LLINE12 and LLINE24 studies
+* Create tables summarising data from the LLNE12 and LLINE24 studies
+
+```{r cleanup, warning=FALSE, error=FALSE, message=FALSE}
+# Clean environment
+rm(list=ls(all=TRUE))
+
+# Unload packages
+if (!is.null(names(utils::sessionInfo()[["otherPkgs"]]))) pacman::p_unload("all")
+```
+
+
+```{r packages, warning=FALSE, error=FALSE, message=FALSE}
+library(haven)
+library(dplyr) 
+library(tidyverse)
+library(readxl)
+library(writexl)
+library(reshape2)
+library(readr)
+library(readstata13)
+```
+
+## Extract the samples from the 12-Month survey data
+```{r }
+
+Household_data_12 <- read.dta13("../../../LineUP2/Household member level data 12 month survey_FINAL.dta", convert.factors = TRUE, generate.factors = TRUE,
+                         encoding = "UTF-8", fromEncoding = NULL, convert.underscore = FALSE,
+                         missing.type = TRUE, convert.dates = TRUE, replace.strl = TRUE,
+                         add.rownames = FALSE, nonint.factors = TRUE, select.rows = NULL,
+                         select.cols = NULL, strlexport = FALSE, strlpath = ".") %>%
+  filter(!is.na(uniqueid))
+  
+ names(Household_data_12) 
+ 
+
+ # Number of participants enrolled
+unique_ids<- Household_data_12 %>% 
+  summarise(n_distinct_ids = n_distinct(uniqueid))
+
+
+
+```
+
+### Now find the discordant samples ie BS positive and RDT negative
+```{r }
+RDT_Neg_and_BS_pos_12 <- Household_data_12 %>%
+                    select(rdtrslt, BSdich, parasitedensity, fpbarcode1)  %>%
+                filter(rdtrslt == "Negative" & BSdich == "Positive")
+
+# number of discordant
+no_discordant_LLN12 <-unique(nrow(RDT_Neg_and_BS_pos_12)) 
+
+paste0("No of discordant samples in LLN12:", no_discordant_LLN12)
+
+
+```
+
+
+
+## Extract samples from LLN24
+```{r}
+Household_data_24 <- read.dta13("../../../LineUP2/Household member level data 24 month survey_FINAL.dta", convert.factors = TRUE, generate.factors = TRUE,
+                         encoding = "UTF-8", fromEncoding = NULL, convert.underscore = FALSE,
+                         missing.type = TRUE, convert.dates = TRUE, replace.strl = TRUE,
+                         add.rownames = FALSE, nonint.factors = TRUE, select.rows = NULL,
+                         select.cols = NULL, strlexport = FALSE, strlpath = ".") 
+  
+  
+ # Number of participants enrolled
+ 
+unique_ids_24 <- Household_data_24 %>% 
+  summarise(n_distinct_ids = n_distinct(uniqueid))
+
+```
+
+## Extract the discordant samples from the 24-Month survey data
+```{r}
+RDT_Neg_and_BS_pos_24 <- Household_data_24 %>%
+                    select(rdtrslt, BSdich, parasitedensity, fpbarcode1)  %>%
+                filter(rdtrslt == "Negative" & BSdich == "Positive")
+
+
+#number of discordant 
+no_discordant_LLN24 <-unique(nrow(RDT_Neg_and_BS_pos_24))
+
+paste0("No of discordant samples in LLN24:", no_discordant_LLN24)
+
+
+all_discordant <- rbind(RDT_Neg_and_BS_pos_12, RDT_Neg_and_BS_pos_24)
+
+
+#save the dataset
+
+# write_csv(all_discordant, "../../data_out/Discordant_sample_list_LLINE12_LLNE24")
+```
+
+##Summarising characteristics of the LLN12 and LLN24 discordant samples
+```{r}
+Characteristics_discordant_12 <- Household_data_12 %>%
+  filter(rdtrslt == "Negative" & BSdich == "Positive") %>% 
+  select(fpbarcode1, rdtrslt, BSdich, gender, ageyrs, gender,inclusion_criteria, temperature,agecat, mrccode, Region)
+
+Characteristics_discordant_24 <- Household_data_24 %>%
+  filter(rdtrslt == "Negative" & BSdich == "Positive")  %>% 
+  select(fpbarcode1, rdtrslt, BSdich, gender, ageyrs, gender, temperature, mrccode, agecat,inclusion_criteria, Region)
+
+Characteristics_discordant_12_24 <- rbind(Characteristics_discordant_12, Characteristics_discordant_24)
+
+Characteristics_discordant_12_24$rdtrslt <- factor(Characteristics_discordant_12_24$rdtrslt, levels = c( "Negative", "Positive"))
+
+Characteristics_discordant_12_24$BSdich<- factor(Characteristics_discordant_12_24$BSdich, levels = c( "Negative", "Positive"))
+
+# Convert to numeric
+Characteristics_discordant_12_24$rdtrslt <- as.numeric(Characteristics_discordant_12_24$rdtrslt) - 1
+
+Characteristics_discordant_12_24$BSdich <- as.numeric(Characteristics_discordant_12_24$BSdich) - 1
+
+Characteristics_discordant_12_24$temperature<- as.numeric(as.character(Characteristics_discordant_12_24$temperature))
+
+
+# Import qpcr and merge in Qpcr data
+
+var_ATS_data <-read_csv("../../data_out/166_RDT_neg_BS_pos_with_varATSqpcr_data.csv")
+
+var_ATS_data<- var_ATS_data[1:7]
+
+Characteristics_discordant_12_24_merged <- Characteristics_discordant_12_24 %>%
+  left_join(var_ATS_data, join_by(rdtrslt, BSdich, fpbarcode1))
+
+# Age
+Summary_age_discordant <- Characteristics_discordant_12_24_merged %>% 
+   summarise(med_age = median(ageyrs),
+             iqr_age = IQR(ageyrs))
+
+# Quantiles
+quantile(Characteristics_discordant_12_24_merged$ageyrs, probs =seq(from = 0.25 ,to =0.75, by = 0.25))
+
+#25% 50% 75% 
+ # 3   6   8 
+
+paste0("Median_age is ", Summary_age_discordant[1,1], " and IQR is " , Summary_age_discordant[1,2])
+
+range(Characteristics_discordant_12_24_merged$ageyrs)
+
+ggplot(Characteristics_discordant_12_24_merged, aes(x = ageyrs)) +
+  geom_histogram()
+
+# Breakdown age
+
+Proportion_age_categories <-Characteristics_discordant_12_24_merged %>% 
+  count(agecat) %>% 
+  mutate(proportion = round(n/sum(n)*100))
+
+# Make column for new age categories < 5, 5-10, >10 years
+
+Characteristics_discordant_12_24_merged$ageyrs <- round(Characteristics_discordant_12_24_merged$ageyrs, 0)
+
+range(Characteristics_discordant_12_24_merged$ageyrs)
+
+Characteristics_discordant_12_24_merged <- Characteristics_discordant_12_24_merged %>% 
+  mutate(age_cat2 = case_when(
+  ageyrs > 0 & ageyrs < 5 ~ "< 5 years",
+  ageyrs >= 5 & ageyrs <= 10 ~ "5 - 10 years",
+  ageyrs > 10 ~ "> 10 years"
+  ))
+
+
+Proportion_age_categories_2 <-Characteristics_discordant_12_24_merged %>% 
+  count(age_cat2) %>% 
+  mutate(proportion = round(n/sum(n)*100))
+
+# Export summarised age categories
+# write_csv(Proportion_age_categories_2, "../../data_out/Age_categories_discordant_samples.csv")
+
+# Gender of participants: 1 is male . 2 is female
+Proportion_gender_12_24 <-Characteristics_discordant_12_24_merged %>% 
+  count(gender) %>% 
+  mutate(proportion = round(n/sum(n)*100))
+
+# Region
+Proportion_region_12_24 <-Characteristics_discordant_12_24_merged %>% 
+  count(Region) %>% 
+  mutate(proportion = round(n/sum(n)*100))
+
+# Export_ region summary
+#write_csv(Proportion_region_12_24, "../../data_out/Regions_for_discordant_samples.csv")
+
+# How many had detectable fever?
+Fever_status_12_24 <- Characteristics_discordant_12_24_merged%>%
+  filter(temperature >= 37.5)
+
+unique(nrow(Fever_status_12_24)) # 
+
+proportion_fever <- unique(nrow(Fever_status_12_24))/nrow(Characteristics_discordant_12_24_merged) *100
+
+round(proportion_fever) # 
+ 
+# Categorise parasite density by microscopy and summarise it
+
+
+Summary_parasite_density <- Characteristics_discordant_12_24_merged %>% 
+  mutate(Parasitemia_threshold = ifelse(parasitedensity < 1000, 0,1 )) %>%
+  count(Parasitemia_threshold) %>% 
+  mutate(Proportion = round(n/sum(n)*100))
+
+Summary_table <- data.frame( 
+N = nrow(Characteristics_discordant_12_24_merged),
+Age_less_5 = Proportion_age_categories_2[2,2],
+Prop_less_5 = Proportion_age_categories_2[2,3],
+Age_5_to_10 = Proportion_age_categories_2[1,2],
+Prop_5_to_10 = Proportion_age_categories_2[1,3],
+Age_greater_10 = Proportion_age_categories_2[3,2],
+Prop_greater_10 = Proportion_age_categories_2[3,3],
+Median_age = Summary_age_discordant[1,1],
+IQR_age= Summary_age_discordant[1,2],
+Male = Proportion_gender_12_24[1,2],
+Prop_male = Proportion_gender_12_24[1,3],
+Fever = nrow(Fever_status_12_24),
+Prop_fever = round(proportion_fever),
+Parasitemia_less_1000 =  Summary_parasite_density[1,2],
+Prop_parasitemia_less_1000 = Summary_parasite_density[1,3],
+Median_parasite_density = median(Characteristics_discordant_12_24_merged$parasitedensity),
+IQR_parasite_density= IQR(Characteristics_discordant_12_24_merged$parasitedensity),
+row.names = "LN12 and 24"
+  )
+
+
+#names(Summary_table) <- c("N","Age ≤  5", "Prop ≤  5yrs", "Age > 5","Prop >5", "Median_age", "IQR_age", "Gender (M)", "Proportion Gender", "Fever", "Proportion Fever", "Parasitemia ≤ 100", "Proportion Parasitemia ≤  100", "Median_parasite_density", "IQR_parasite_density" )
+
+
+# save
+
+
+ #write_csv(Summary_table, "../../data_out/Table_characteristics_LLNEUP_166_discordant_samples_06032024.csv")
+  
+ quantile(Characteristics_discordant_12_24_merged$parasitedensity)
+```
+
+
+
+## Obtain number of samples from both LLN12 and LLN24 survey which had both RDT and BS done
+```{r}
+
+# convert to variables to factors
+Household_data_12 <- Household_data_12 %>% 
+  mutate(rdtdone = factor(case_when(
+                  rdtdone == "No" ~ 0,
+                  rdtdone == "Yes" ~ 1,
+                  rdtdone == "-9" ~ as.numeric(rdtdone))),
+          BSdone = factor(BSdone))
+
+
+filter_12 <- Household_data_12 %>% 
+ filter(rdtdone == 1 & BSdone == 1)
+
+print(nrow(filter_12)) # 4836 Rdt and BS done
+
+
+Household_data_24 <- Household_data_24 %>% 
+  mutate(rdtdone = factor(case_when(
+                  rdtdone == "No" ~ 0,
+                  rdtdone == "Yes" ~ 1,
+                  rdtdone == "-9" ~ as.numeric(rdtdone))),
+         BSdone = factor(BSdone))
+
+Household_data_24$BSdone <-factor(Household_data_24$BSdone)
+
+filter_24 <- Household_data_24 %>% 
+  filter(rdtdone == 1 & BSdone == 1 )
+
+print(nrow(filter_24))
+
+RDT_and_bs_done_12_24 <-nrow(filter_12) +nrow(filter_24)
+
+paste0("RDT and BS was performed on ", RDT_and_bs_done_12_24, " samples from LLN12 and LLN24 studies") # 9355
+```
+
+## Total no. of BS pos  from LLN12 and LLN24
+## Total no. of RDT pos from LLN12 and LLN24
+```{r}
+
+BS_pos_12 <- filter(Household_data_12, BSdich == "Positive")
+
+BS_pos_24 <- filter(Household_data_24, BSdich == "Positive")
+
+Total_BS_pos <- nrow(BS_pos_12) + nrow(BS_pos_24)
+
+paste0("Total no of BS positive samples in LLN12 and LLN24 study:", Total_BS_pos)
+
+
+RDT_pos_12 <- filter(Household_data_12, rdtrslt == 1 ) 
+
+
+RDT_pos_24 <- filter(Household_data_24, rdtrslt == 1 )
+
+
+
+
+```
+
+
+
+## Proportion of discordant samples out of the total of the BS positive samples from both LLINE12 and LLINE 24 studies
+```{r}
+
+## Proportion discordant
+
+Prop_discordant_overall <- round((nrow(RDT_Neg_and_BS_pos_12)+ nrow(RDT_Neg_and_BS_pos_24))/Total_BS_pos * 100, 1)
+
+
+paste0(" Proportion of RDT negative and BS positive samples in both LLN12 and LLN24 samples: ", Prop_discordant_overall)
+
+```
+
+
+```{r print_date_and_time}
+Sys.time()
+```
+
+```{r print_session_info}
+# sessionInfo()
+devtools::session_info()
+```
