@@ -496,7 +496,7 @@ var_ATS_data &lt;- read_csv(&quot;../../data_in/all_LN2_qpcr.csv&quot;)</code></
 ## ℹ Use `spec()` to retrieve the full column specification for this data.
 ## ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.</code></pre>
 <pre class="r"><code>var_ATS_data &lt;- var_ATS_data %&gt;% 
-  transmute(`Sample Name`, Quantity_by_qpcr = round(qpcr, 0),
+  transmute(`Sample Name`, Quantity_by_qpcr = qpcr,
             `Study Subject`)
 
 all_sps_results_merge &lt;- all_sps_results %&gt;% 
@@ -593,6 +593,11 @@ if (&quot;4064903947&quot; %in% merged_sps_pcr_slide_rereads_2$Barcode){
 
 }
 
+# Some pf mono infections identified by sps PCR, which is strange. Checking their parasite density
+pf &lt;-filter(merged_sps_pcr_slide_rereads_2, Sps_call == &quot;Pf&quot;)
+
+pf$Quantity_by_qpcr &lt;- round(pf$Quantity_by_qpcr, 2)
+
 # Save results of slide rereads and pcr
 
 # write_csv(merged_sps_pcr_slide_rereads_2, &quot;../../data_out/Merged_sps_pcr_and_slide_rereads_07_03_2024.csv&quot;)
@@ -614,7 +619,7 @@ Concordant_by_pcr &lt;- filter(merged_sps_pcr_slide_rereads_2, Concordant == 1)
 Concordant_by_pcr_sub &lt;- Concordant_by_pcr %&gt;% 
   select(Barcode, Quantity_by_qpcr, Overall_call_pcr, Overall_call_slide_reread, Concordant)</code></pre>
 <pre class="r"><code>Sys.time()</code></pre>
-<pre><code>## [1] &quot;2024-03-11 13:40:15 EAT&quot;</code></pre>
+<pre><code>## [1] &quot;2024-03-22 13:21:51 EAT&quot;</code></pre>
 <pre class="r"><code># sessionInfo()
 devtools::session_info()</code></pre>
 <pre><code>## ─ Session info ───────────────────────────────────────────────────────────────
@@ -627,7 +632,7 @@ devtools::session_info()</code></pre>
 ##  collate  en_US.UTF-8
 ##  ctype    en_US.UTF-8
 ##  tz       Africa/Kampala
-##  date     2024-03-11
+##  date     2024-03-22
 ##  pandoc   3.1.1 @ /Applications/RStudio.app/Contents/Resources/app/quarto/bin/tools/ (via rmarkdown)
 ## 
 ## ─ Packages ───────────────────────────────────────────────────────────────────
