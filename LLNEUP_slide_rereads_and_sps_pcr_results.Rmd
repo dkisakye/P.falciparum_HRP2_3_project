@@ -144,7 +144,7 @@ length(distinct_ids$`Study Subject`) # 75
 var_ATS_data <- read_csv("../../data_in/all_LN2_qpcr.csv")
 
 var_ATS_data <- var_ATS_data %>% 
-  transmute(`Sample Name`, Quantity_by_qpcr = round(qpcr, 0),
+  transmute(`Sample Name`, Quantity_by_qpcr = qpcr,
             `Study Subject`)
 
 all_sps_results_merge <- all_sps_results %>% 
@@ -202,6 +202,9 @@ summary_sps_calls <- sps_pcr_calls %>%
 
 #write_csv(sps_pcr_calls, "../../data_out/All_species_pcr_calls.csv")
 
+
+
+
 ```
 
 ### Merge species pcr data with slide re-read data to check concordance
@@ -238,6 +241,11 @@ if ("4064903947" %in% merged_sps_pcr_slide_rereads_2$Barcode){
   merged_sps_pcr_slide_rereads_2$`Study Subject`[merged_sps_pcr_slide_rereads_2$Barcode == "4064903947"] <- data_missing_sample$`Study Subject`
 
 }
+
+# Some pf mono infections identified by sps PCR, which is strange. Checking their parasite density
+pf <-filter(merged_sps_pcr_slide_rereads_2, Sps_call == "Pf")
+
+pf$Quantity_by_qpcr <- round(pf$Quantity_by_qpcr, 2)
 
 # Save results of slide rereads and pcr
 
