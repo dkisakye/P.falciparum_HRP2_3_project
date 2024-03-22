@@ -1,5 +1,5 @@
 ---
-title: "Summarising_sps_re-reads and Species pcr data"
+title: "Summarising species re-reads and Species pcr data"
 author: "dkisakye"
 date: "2023-09-18"
 output:
@@ -145,7 +145,7 @@ var_ATS_data <- read_csv("../../data_in/all_LN2_qpcr.csv")
 
 var_ATS_data <- var_ATS_data %>% 
   transmute(`Sample Name`, Quantity_by_qpcr = qpcr,
-            `Study Subject`)
+            `Study Subject`,`Amp Status`, `Ct Threshold` )
 
 all_sps_results_merge <- all_sps_results %>% 
   left_join(var_ATS_data, join_by(`Study Subject`))
@@ -245,7 +245,6 @@ if ("4064903947" %in% merged_sps_pcr_slide_rereads_2$Barcode){
 # Some pf mono infections identified by sps PCR, which is strange. Checking their parasite density
 pf <-filter(merged_sps_pcr_slide_rereads_2, Sps_call == "Pf")
 
-pf$Quantity_by_qpcr <- round(pf$Quantity_by_qpcr, 2)
 
 # Save results of slide rereads and pcr
 
