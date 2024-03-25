@@ -6,24 +6,30 @@
 
 rm(list =ls (all = TRUE))
 
-setwd("/Users/admin/Documents/IMMRSE/Hrp2:3/Scripts/P.falciparum_HRP2_3_project")
+setwd("~/Documents/K23_LLINEUP2_12month_qPCR/hrp2_3_investigation/P.falciparum_HRP2_3_project-main/")
 
 ## Load libraries
 library(readr)
-library(dplyr)
+#library(dplyr)
 library(tidyverse)
 library(readxl)
 
 
 ## Import ddpcr data
 
-ddpcr <- read_csv("../../data_out/All_ddPCR_raw_data.csv")
+ddpcr <- read_csv("data_in/All_ddPCR_raw_data.csv")
 
+#drops 3 rows
 ddpcr <- ddpcr %>% 
   transmute(Well, `Sample Name` = Sample , Target = Target,  Concentration = as.double(`Conc [copies/µL]`), Valid_Partitions = as.double(`Partitions (valid)`), Positive_partitions = as.double(`Partitions (positive)`), Negative_partitions = as.double(`Partitions (negative)`)) %>% 
   filter(Valid_Partitions >= 1500)
 
-str(ddpcr)
+#sample dropped is a 3D7 10k control
+ #ddpcr_check <- ddpcr %>% 
+  # transmute(Well, `Sample Name` = Sample , Target = Target,  Concentration = as.double(`Conc [copies/µL]`), Valid_Partitions = as.double(`Partitions (valid)`), Positive_partitions = as.double(`Partitions (positive)`), Negative_partitions = as.double(`Partitions (negative)`)) %>% 
+   #filter(Valid_Partitions < 1500)
+
+glimpse(ddpcr)
 
 ## Remove negative controls
 ddpcr_filtered <- ddpcr[!grepl("NTC", ddpcr$`Sample Name`), ]
@@ -33,7 +39,7 @@ length(unique(ddpcr_filtered$`Sample Name`)) # 102 samples
 
 ## Import the qpcr data for the field samples
 
-qpcr_data <- read_csv("../../data_in/all_LN2_qpcr.csv")
+qpcr_data <- read_csv("data_in/all_LN2_qpcr.csv")
 
 glimpse(qpcr_data)
 
@@ -47,7 +53,7 @@ ddpcr_with_parasite_density <- ddpcr_filtered %>%
 
 ## Import Sampledb to identify the names for the controls
 
-sample_db_controls <- read_csv("../../databases/data-2024-02-20_controls.csv")
+sample_db_controls <- read_csv("data_in/data-2024-02-20_controls.csv")
 
 sample_db_controls_sub <- sample_db_controls %>% 
   transmute(`Sample Name`= as.character(Barcode), `Study Subject`)
@@ -64,72 +70,16 @@ ddpcr_with_parasite_density_and_controls <-ddpcr_with_parasite_density_and_contr
 
 any(is.na(ddpcr_with_parasite_density_and_controls$`Study Subject`)) # Missing study subject id's for controls
 
-# Import qpcr data for 3d7 controls from most recent run on 14th Feb
+# Import qpcr data for controls used for ddPCR.
 
-qpcr_controls_3d7 <- read_xlsx("../../data_in/2024_01_24_CTRL-24-002&003_varATS_qPCR.xlsx", sheet = "Results", col_names = FALSE)
+qpcr_data_controls <- read_csv("data_in/qpcr_database_for_ddPCR_controls.csv") %>% 
+  transmute(`Sample Name` = as.character(`Sample Name`), Quantity )
 
-qpcr_controls_3d7 <- qpcr_controls_3d7[47:99, ] # Omitting medata
-
-names(qpcr_controls_3d7) <- as.vector(qpcr_controls_3d7[1, ])
-
-qpcr_controls_3d7 <- qpcr_controls_3d7[2:53, ]
-
-## Subset the dataset and filter
-
-Filtered_qpcr_3d7_controls <- qpcr_controls_3d7 %>% 
-  select(`Sample Name`, Quantity, CT) %>% 
-  mutate(Threshold_value_qpcr = ifelse(
-    Quantity == "10000.0" | Quantity == "1000.0" | Quantity == "100.0" | Quantity == "10.0" | Quantity == "1.0", 1, 0 ))
-
-
-# Filter out replicates used for thresholding
-
-Filtered_qpcr_3d7_controls_1 <- Filtered_qpcr_3d7_controls %>% 
-  filter(!is.na(Threshold_value_qpcr )) %>% 
-  filter(Threshold_value_qpcr == 0 ) %>% 
-  select(1:2) 
-
-# str(Filtered_qpcr_controls_1)
-
-Filtered_qpcr_3d7_controls_1$Quantity <- round(as.numeric(Filtered_qpcr_3d7_controls_1$Quantity), 0)
-
-## Import qpcr data for dd2 controls 
-
-qpcr_controls_dd2 <- read_xlsx("../../data_in/2024_02-13_CTRL-23-004_varATS_qPCR.xlsx", sheet = "Results", col_names = FALSE)
-
-
-qpcr_controls_dd2 <- qpcr_controls_dd2[47:79, ] # Omitting medata
-
-names(qpcr_controls_dd2) <- as.vector(qpcr_controls_dd2[1, ])
-
-qpcr_controls_dd2 <- qpcr_controls_dd2[2:33, ]
-
-## Subset the dataset and filter
-
-Filtered_qpcr_dd2_controls <- qpcr_controls_dd2 %>% 
-  select(`Sample Name`, Quantity, CT) %>% 
-  mutate(Threshold_value_qpcr = ifelse(
-    Quantity == "10000.0" | Quantity == "1000.0" | Quantity == "100.0" | Quantity == "10.0" | Quantity == "1.0", 1, 0 ))
-
-
-# Filter out replicates used for thresholding
-
-Filtered_qpcr_dd2_controls_1 <- Filtered_qpcr_dd2_controls %>% 
-  filter(!is.na(Threshold_value_qpcr )) %>% 
-  filter(Threshold_value_qpcr == 0 ) %>% 
-  select(1:2) 
-
-Filtered_qpcr_dd2_controls_1$Quantity <- round(as.numeric(Filtered_qpcr_dd2_controls_1$Quantity), 0)
-
-
-##  Bind all control qpcr data
-
-qpcr_data_all_controls <-rbind(Filtered_qpcr_3d7_controls_1, Filtered_qpcr_dd2_controls_1 )
 
 ## Merge qpcr data for all the controls into the ddPCR dataframe with field samples
 
 ddpcr_with_parasite_density_and_controls_merged <- ddpcr_with_parasite_density_and_controls %>% 
-  left_join(qpcr_data_all_controls, join_by(`Sample Name`))
+  left_join(qpcr_data_controls, join_by(`Sample Name`))
 
 # Merge in control parasite densities
 
@@ -139,14 +89,14 @@ ddpcr_with_parasite_density_and_controls_merged <-ddpcr_with_parasite_density_an
 # Now remove the Quantity column
 ddpcr_with_parasite_density_and_controls_merged <-  ddpcr_with_parasite_density_and_controls_merged %>% 
   select(-Quantity)
-ddpcr_with_parasite_density_and_controls_merged$qpcr <-round(ddpcr_with_parasite_density_and_controls_merged$qpcr)
+ddpcr_with_parasite_density_and_controls_merged$qpcr <-round(ddpcr_with_parasite_density_and_controls_merged$qpcr, 3)
 
 ## Some of these samples were from IMMRSE. let me import the qpcr data for IMMRSE_U and identify them
 
-Immrse_qpcr_data <-read_csv("../../databases/ImmrseMergedqpcr.csv")
+Immrse_qpcr_data <-read_csv("data_in/ImmrseMergedqpcr.csv")
 
 Immrse_qpcr_data_sub <- Immrse_qpcr_data %>% 
-  transmute(`Sample Name` = as.character(SampleName), `Study Subject` = Study_Subject, Quantity = round(Quantity, 0))
+  transmute(`Sample Name` = as.character(SampleName), `Study Subject` = Study_Subject, Quantity = round(Quantity, 3))
 
 # Merge ddpcr data frame with immrse qpcr data and subjecty id
 
@@ -164,9 +114,14 @@ ddpcr_with_parasite_density_and_controls_merged <- ddpcr_with_parasite_density_a
   select(1:8, `Study Subject`)
 
 
-any(is.na(ddpcr_with_parasite_density_and_controls_merged$`Study Subject`)) # FALSE, no missing id's
+any(is.na(ddpcr_with_parasite_density_and_controls_merged$`Study Subject`)) # FALSE, no missing id's.
 
-# Save this database
+table(ddpcr_with_parasite_density_and_controls_merged$qpcr, useNA = "always")
+
+ctrls <- ddpcr_with_parasite_density_and_controls_merged %>% 
+  filter(grepl("3D7", `Study Subject`) | grepl("Dd2", `Study Subject`) | grepl("3d7", `Study Subject`))
+
+# Save this database -- All controls present
 
 #write_csv(ddpcr_with_parasite_density_and_controls_merged, "../../data_out/LLNEUP2_and_IMMRSE_ddpcr_samples_with_qpcr_data.csv")
 
@@ -203,7 +158,7 @@ ddpcr_controls_wide <- ddpcr_controls %>%
     Positive_partitions_tRNA_rep1 >= 5 & Positive_partitions_tRNA_rep2 >= 2 ~ 1,
     Positive_partitions_tRNA_rep1 >= 2 & Positive_partitions_tRNA_rep2 >= 5 ~ 1,
     # Positive_partitions_tRNA_rep1 >= 5 & is.na(Positive_partitions_tRNA_rep2) &  qpcr >= 1000 ~ 1,
-    Positive_partitions_tRNA_rep1 >= 5 & is.na(Positive_partitions_tRNA_rep2) ~ 1 # samples with parasite density > 1000 have only one replicate
+    Positive_partitions_tRNA_rep1 >= 5 & is.na(Positive_partitions_tRNA_rep2) ~ 1, # samples with parasite density > 1000 have only one replicate
     TRUE ~ 0 ),
     Hrp2_pass = case_when(
       Positive_partitions_hrp2_exon2_rep1 >= 2  & Positive_partitions_hrp2_exon2_rep2 >= 2 ~ 1,
@@ -211,7 +166,7 @@ ddpcr_controls_wide <- ddpcr_controls %>%
       TRUE ~ 0),
     Hrp3_pass = case_when(
       Positive_partitions_hrp3_rep1 >= 2 & Positive_partitions_hrp3_rep2 >= 2 ~ 1,
-      Positive_partitions_hrp3_rep1 >= 2 & is.na(Positive_partitions_hrp3_rep2) &  ~ 1,
+      Positive_partitions_hrp3_rep1 >= 2 & is.na(Positive_partitions_hrp3_rep2)  ~ 1,
       TRUE ~ 0),
     Qc_pass = case_when(
       tRNA_pass == 1 & Hrp2_pass == 1  & Hrp3_pass == 1 ~ "pass",
@@ -228,7 +183,7 @@ ddpcr_controls_wide <- ddpcr_controls %>%
 # write_csv(ddpcr_controls_wide, "../../data_out/ddPCR_run_2_controls_26022024.csv")
 
 
-## Filter out IMMRSE samples  and sample that was not part of the LLNEUP 12 samples but ran accidentally
+## Filter out IMMRSE samples and sample that was not part of the LLNEUP 12 samples but ran accidentally
 
 
 ddpcr_grouped_sub <-ddpcr_grouped[!grepl(ddpcr_grouped$`Study Subject`, pattern = "^IM|^W780"), ] 
@@ -241,11 +196,14 @@ ddpcr_wide<- ddpcr_grouped_sub %>%
 
 ddpcr_wide_2 <-ddpcr_wide[!grepl(ddpcr_wide$`Study Subject`, pattern= "Dd2|3D7", ignore.case = TRUE),  ] # filter out controls
 
+
 # Criteria to call a gene present:
 # For samples with parasite density < 1000. They were run in duplicate. 
-#1. If replicate 1 and replicate 2 for each of the markers pass the threshold to call a gene/marker present(>=5 positive partitions for trna and >=2 positive partitions for hrp2 and hrp3) then gene is present
+#1. If replicate 1 and replicate 2 for each of the markers pass the threshold to call a gene/marker present(>=5 positive partitions for trna and >=2 positive partitions for hrp2 and/or hrp3) then gene is present
 #2. If no. of positive partitions for trna in replicate 1 >=5, and no. of positive partitions trna in replicate 2 is >=2,  and no. of positive partitions for hrp2 and hrp3 >=2 in replicates 1 and 2, the gene is present 
 
+#JB comment -- what do we do with a sample like BW015? 
+# parasite density is below 10; I don't think we should pass it because most of those with densities < 10 have failed qc thresholds
 
 
 ddpcr_wide_2<- ddpcr_wide_2%>% 
@@ -276,38 +234,24 @@ ddpcr_wide_2<- ddpcr_wide_2%>%
       tRNA_pass == 1 & Hrp2_pass == 0  & Hrp3_pass == 0 & qpcr >= 10 ~ "hrp2 and hrp3 deleted",
       tRNA_pass == 1 & Hrp2_pass == 0  & Hrp3_pass == 0 & qpcr < 10 ~ "fail_hrp2_and_hrp3"
     ))
-  
-summary(ddpcr_wide_2$qpcr)
 
-# Min.  1st Qu.   Median     Mean  3rd Qu.     Max. 
-# 2.00    40.25   242.00  7253.61  2096.50 92524.00 
+
+fail <- ddpcr_wide_2[grepl(ddpcr_wide_2$Qc_pass, pattern="^fail"), ]
+
+summary(fail$qpcr) # 
+
+
+ddpcr_wide_2 <- ddpcr_wide_2 %>% 
+  mutate(qpcr_cat = floor(log10(qpcr)))
+
+#number of samples passing QC by qPCR category  
+table(ddpcr_wide_2$qpcr_cat, ddpcr_wide_2$tRNA_pass)
+
+#mean qPCR by tRNA pass 
+summarize <- ddpcr_wide_2 %>% group_by(tRNA_pass) %>% summarize(mean = mean(qpcr), median = median(qpcr))
 
 
 # Save
 #write_csv(ddpcr_wide_2, "../../data_out/ddPCR_all_results.csv")
-
-
-# Filter low quality DNA or failed qpcr
-
-Failed_qc <- filter(ddpcr_wide_2, Qc_pass != "pass" , Qc_pass != "hrp3 deletion")
-
-summary(Failed_qc$qpcr)
-
-# Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
-# 2.000   3.000   5.000   5.769   7.000  15.000 
-
-
-Pass_qc <- ddpcr_wide_2[! ddpcr_wide_2$`Sample Name` %in% Failed_qc$`Sample Name`, ]
-
-summary(Pass_qc$qpcr)
-#Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
-# 10     115     308    8477    2675   92524 
-
-
-# Now analyse samples with densities >= 1000
-
-
-#
-
 
 

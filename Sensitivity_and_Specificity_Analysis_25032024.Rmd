@@ -1,0 +1,384 @@
+---
+title: "Sensitivity and Specificity analysis"
+author: "dkisakye/JBriggs"
+date: "2024-03-25"
+output:
+  html_document:
+    toc: yes
+  toc: default
+---
+
+## Objective
+Perform sensitivity and specificity analysis on samples from the LLINEUP2 study 
+
+```{r cleanup, warning=FALSE, error=FALSE, message=FALSE}
+# Clean environment
+rm(list=ls(all=TRUE))
+
+# Unload packages
+if (!is.null(names(utils::sessionInfo()[["otherPkgs"]]))) pacman::p_unload("all")
+
+```
+
+### Load packages
+```{r packages, warning=FALSE, error=FALSE, message=FALSE}
+library(haven)
+library(tidyverse)
+library(readxl)
+library(writexl)
+library(reshape2)
+library(readr)
+library(caret)
+library(pROC)
+library(readstata13)
+library(knitr)
+library(kableExtra)
+
+```
+
+
+
+### Sensitivity analysis using the entire LineUP2 12 months survey samples -- JB comment i think we should combine the 12 and 24 month survey for the microscopy only analysis 
+### Maybe this should go in the text as separate table - overall sensivity and specificity of RDT by microscopy in all LLN2 samples
+
+```{r, sensitivity}
+
+# Household_data_12 <- read.dta13("~/Documents/K23_LLINEUP2_12month_qPCR/hrp2_3_investigation/P.falciparum_HRP2_3_project-main/data_in/Household member level data 12 month survey_FINAL.dta", convert.factors = TRUE, generate.factors = TRUE,
+# encoding = "UTF-8", fromEncoding = NULL, convert.underscore = FALSE,
+# missing.type = TRUE, convert.dates = TRUE, replace.strl = TRUE,
+# add.rownames = FALSE, nonint.factors = TRUE, select.rows = NULL,
+# select.cols = NULL, strlexport = FALSE, strlpath = ".") 
+
+
+ Household_data_12 <- read_dta("~/Documents/K23_LLINEUP2_12month_qPCR/hrp2_3_investigation/P.falciparum_HRP2_3_project-main/data_in/Household member level data 12 month survey_FINAL.dta") %>% 
+  select(rdtdone, rdtrslt, BSdone, BSdich) 
+
+ Household_data_24 <- read_dta("~/Documents/K23_LLINEUP2_12month_qPCR/hrp2_3_investigation/P.falciparum_HRP2_3_project-main/data_in/Household member level data 24 month survey_FINAL.dta") %>% 
+ select(rdtdone, rdtrslt, BSdone, BSdich) 
+ 
+ Household_data <- bind_rows(Household_data_12, Household_data_24)
+
+# Take a look at a summary of the rdt and bs data
+ table(Household_data$rdtrslt) # rdt result not available/not done for some
+ 
+ table(Household_data$BSdich)
+ 
+# First filter to keep only observations where rdt and bs were done -- JB comment: in 2 to 10yos only
+ Household_data_trim <-Household_data %>% 
+   filter(rdtdone == 1 & BSdone == 1)
+ 
+ # Convert rdt result and blood smear microscopy result to factors
+
+Household_data_trim$rdtrslt <- factor(Household_data_trim$rdtrslt, levels = c(1,0))
+
+Household_data_trim$BSdich <- factor(Household_data_trim$BSdich, levels = c(1,0)) 
+
+table(Household_data_trim$rdtrslt) 
+table(Household_data_trim$BSdich) 
+
+sensitivity_by_bs <-round(sensitivity(Household_data_trim$rdtrslt, Household_data_trim$BSdich, positive = levels(Household_data_trim$BSdich)[1]) * 100, 0) # 100
+
+sensitivity_by_bs # 92
+
+# Double check manually
+
+true_pos_bs <- filter(Household_data_trim, rdtrslt == 1 & BSdich == 1)
+ 
+false_neg_bs <- filter(Household_data_trim, rdtrslt == 0 & BSdich == 1 )
+
+sensitivity_check_bs <- round(nrow(true_pos_bs)/(nrow(true_pos_bs) + nrow(false_neg_bs)) * 100, 0)
+
+sensitivity_check_bs # Also 91
+
+# positive predictive value of RDTs with microscopy as gold standard
+
+pos_Pred_bs <- round(posPredValue(Household_data_trim$rdtrslt, Household_data_trim$BSdich, positive = levels(Household_data_trim$BSdich)[1])*100, 0) # 50
+
+pos_Pred_bs
+
+#specificity by BS, all LN2 samples
+spec_by_bs <- round(specificity( Household_data_trim$rdtrslt, Household_data_trim$BSdich, negative = levels(Household_data_trim$BSdich)[-1])* 100, 0) # 56
+
+spec_by_bs
+
+```
+
+## Try making a nice table of the above results
+```{r, kable1} 
+
+# Example data (replace with your data)
+actual <- Household_data_trim$BSdich
+predicted <- Household_data_trim$rdtrslt
+
+# Create a confusion matrix
+confusionMatrix <- table(Actual = actual, Predicted = predicted)
+
+# Calculate Sensitivity and Specificity
+TP <- confusionMatrix[1, 1]
+FN <- confusionMatrix[1, 2]
+TN <- confusionMatrix[2, 2]
+FP <- confusionMatrix[2, 1]
+
+sensitivity <- TP / (TP + FN)
+specificity <- TN / (TN + FP)
+PPV <- round(TP / (TP + FP), 2) # Positive Predictive Value
+NPV <- round(TN / (TN + FN), 2) # Negative Predictive Value
+
+# Round the values
+TP <- round(TP, 2)
+FN <- round(FN, 2)
+TN <- round(TN, 2)
+FP <- round(FP, 2)
+sensitivity <- round(sensitivity, 2)
+specificity <- round(specificity, 2)
+
+# Create a data frame with all results
+results <- data.frame(
+  Measure = c("True Positives (TP)", "False Positives (FP)", "True Negatives (TN)", "False Negatives (FN)", 
+              "Sensitivity", "Specificity", "Positive Predictive Value (PPV)", "Negative Predictive Value (NPV)"),
+  Value = c(TP, FP, TN, FN, sensitivity, specificity, PPV, NPV)
+)
+
+# Create a nicely formatted table with a title
+kable(results, format = "html", col.names = c("Measure", "Value"), 
+      caption = "Performance Metrics Including Confusion Matrix: All LLINEUP2 samples using microscopy as gold standard") %>%
+  kable_styling(bootstrap_options = c("striped", "hover"))
+```
+
+
+
+
+### Sensitivity analysis using the random samples with qpcr and microscopy as gold standard
+### JB comment -- good to report for both qPCR and microscopy here in the random sample  
+
+```{r}
+# Import list of random samples
+
+Random_samples <- read_csv("~/Documents/K23_LLINEUP2_12month_qPCR/hrp2_3_investigation/P.falciparum_HRP2_3_project-main/data_in/completely_random_LN2_sample.csv")
+
+
+# Merge Random samples with var ATS Qpcr data
+
+var_ATS_data <- read_csv("~/Documents/K23_LLINEUP2_12month_qPCR/hrp2_3_investigation/P.falciparum_HRP2_3_project-main/data_in/all_LN2_qpcr.csv")
+
+ All_Random_samples<- Random_samples %>% 
+  left_join(var_ATS_data, by= join_by(fpbarcode1 == `Study Subject`))
+ 
+ # Create a new variable categorical variable for qpcr result
+ All_Random_samples$qpcr <- round(All_Random_samples$qpcr, 3) #rounded to 3 instead
+ All_Random_samples$Qpcr_result <- ifelse(All_Random_samples$qpcr <= 1, 0, 1)
+ 
+
+ # Convert variables of interest to factors
+All_Random_samples$rdtrslt <- factor(All_Random_samples$rdtrslt, levels = c(1,0))
+All_Random_samples$BSdich <- factor(All_Random_samples$BSdich, levels = c(1,0))
+All_Random_samples$Qpcr_result <- factor(All_Random_samples$Qpcr_result, levels = c(1,0))
+
+
+
+# Sensitivity (qPCR)
+sensitivity_by_qpcr <-round(sensitivity(All_Random_samples$rdtrslt, All_Random_samples$Qpcr_result, positive = levels(All_Random_samples$Qpcr_result)[1]) * 100, 0)
+
+sensitivity_by_qpcr # 90
+
+# Double check manually
+
+true_pos_qpcr <- filter(All_Random_samples, rdtrslt == 1 & Qpcr_result == 1)
+ 
+false_neg_qpcr <- filter(All_Random_samples, rdtrslt == 0 & Qpcr_result == 1 )
+
+sensitivity_check_qpcr <- round(nrow(true_pos_qpcr)/(nrow(true_pos_qpcr) + nrow(false_neg_qpcr)) * 100, 0)
+
+sensitivity_check_qpcr # Also 90
+
+#sensitivity (microscopy in random Sample)
+sensitivity_by_microscopy <-round(sensitivity(All_Random_samples$rdtrslt, All_Random_samples$BSdich, positive = levels(All_Random_samples$BSdich)[1]) * 100, 0)
+
+true_pos_bs <- filter(All_Random_samples, rdtrslt == 1 & BSdich == 1)
+ 
+false_neg_bs <- filter(All_Random_samples, rdtrslt == 0 & BSdich == 1 )
+
+sensitivity_check_bs <- round(nrow(true_pos_bs)/((nrow(true_pos_bs) + nrow(false_neg_bs))) * 100, 0)
+
+sensitivity_check_bs # Also 93
+
+
+# Positive predictive value of rdt with qpcr as gold standard
+
+pos_Pred_qpcr <- round(posPredValue(All_Random_samples$rdtrslt, All_Random_samples$Qpcr_result, positive = levels(All_Random_samples$Qpcr_result)[1])*100, 0) # 64
+
+pos_Pred_qpcr
+
+```
+
+### Specificity using random samples
+* With Microscopy as gold standard
+* With qPCR as gold standard
+```{r, specificity}
+# With Microscopy as gold standard
+
+spec_by_bs <- round(specificity( All_Random_samples$rdtrslt, All_Random_samples$BSdich, negative = levels(All_Random_samples$BSdich)[-1])* 100, 0) # 56
+
+spec_by_bs
+
+neg_Pred_by_bs <- round(negPredValue( All_Random_samples$rdtrslt, All_Random_samples$BSdich, negative = levels(All_Random_samples$BSdich)[-1])* 100, 0) # 95 
+neg_Pred_by_bs 
+
+
+# Double checking manually
+
+true_neg <- filter (All_Random_samples,  rdtrslt == 0 & BSdich == 0 )
+
+false_pos <- filter(All_Random_samples, rdtrslt == 1 & BSdich == 0)
+
+specificity_check_by_bs <- round(nrow(true_neg)/(nrow(true_neg) + nrow(false_pos)) * 100, 0)
+
+specificity_check_by_bs
+
+
+# With qPCR as gold standard
+
+spec_by_qPCR <- round(specificity( All_Random_samples$rdtrslt, All_Random_samples$Qpcr_result, negative = levels(All_Random_samples$Qpcr_result)[-1])* 100, 0) # 
+
+spec_by_qPCR # 64
+
+# Negative predictive value by qPCR
+neg_Pred_by_qPCR <- round(negPredValue( All_Random_samples$rdtrslt, All_Random_samples$Qpcr_result, negative = levels(All_Random_samples$Qpcr_result)[-1])* 100, 0) # 
+
+neg_Pred_by_qPCR # 92
+```
+
+### Make another table 
+
+```{r, kable2}
+
+# Example data (replace with your data)
+actual_bs <- All_Random_samples$BSdich
+actual_qpcr <- All_Random_samples$Qpcr_result
+predicted <- All_Random_samples$rdtrslt
+
+# Create confusion matrices for both methods
+confusionMatrix1 <- table(Actual = actual_bs, Predicted = predicted)
+confusionMatrix2 <- table(Actual = actual_qpcr, Predicted = predicted)
+
+# Calculate Sensitivity and Specificity for each method
+calc_metrics <- function(confusionMatrix) {
+  TP <- confusionMatrix[1, 1]
+  FN <- confusionMatrix[1, 2]
+  TN <- confusionMatrix[2, 2]
+  FP <- confusionMatrix[2, 1]
+
+    sensitivity <- round(TP / (TP + FN), 2)
+    specificity <- round(TN / (TN + FP), 2)
+    PPV <- round(TP / (TP + FP), 2) # Positive Predictive Value
+    NPV <- round(TN / (TN + FN), 2) # Negative Predictive Value
+    
+    return(c(TP, FP, TN, FN, sensitivity, specificity, PPV, NPV))
+}
+# Create confusion matrices and calculate metrics for both methods
+confusionMatrix1 <- table(Actual = actual_bs, Predicted = predicted)
+metrics1 <- calc_metrics(confusionMatrix1)
+
+confusionMatrix2 <- table(Actual = actual_qpcr, Predicted = predicted)
+metrics2 <- calc_metrics(confusionMatrix2)
+
+# Combine results into a data frame for nice formatting
+results <- data.frame(
+  Measure = c("True Positives (TP)", "False Positives (FP)", "True Negatives (TN)", "False Negatives (FN)", 
+              "Sensitivity", "Specificity", "Positive Predictive Value (PPV)", "Negative Predictive Value (NPV)"),
+  Method1 = metrics1,
+  Method2 = metrics2
+)
+
+# Create a nicely formatted table with a title
+kable(results, format = "html", col.names = c("Measure", "Microscopy", "qPCR"), 
+      caption = "Comparison of RDT performance metrics with microscopy and qPCR as gold standard on random subset") %>%
+  kable_styling(bootstrap_options = c("striped", "hover"))
+
+
+```
+
+## Could be interesting to look at sensitivity of RDTs by parasite density (qPCR)
+
+```{r}
+
+All_Random_samples <- All_Random_samples %>% 
+  mutate(qpcr_cat = ifelse(qpcr > 0, floor(log10(qpcr)), "Negative")) %>% 
+  mutate(qpcr_cat1 = case_when(qpcr == 0 ~ "Negative", 
+                               qpcr > 0 & qpcr <= 1 ~ "Less than or equal to 1 p/ul", 
+                               qpcr > 1 & qpcr <= 10 ~ "Between 1p/uL and 10 p/uL", 
+                               qpcr > 10 & qpcr <= 100 ~ "Between 10p/uL and 100 p/uL", 
+                               qpcr >100 & qpcr <=1000 ~ "Between 100p/uL and 1000p/ul",
+                               qpcr > 1000 & qpcr <= 10000 ~ "Between 1,000p/ul and 10,000p/ul", 
+                               qpcr > 10000 ~ "Above 10,000 p/ul"))
+
+All_Random_samples$qpcr_cat1 <- factor(All_Random_samples$qpcr_cat1, levels = c("Negative", "Less than or equal to 1 p/ul", 
+                                                                                "Between 1p/uL and 10 p/uL", 
+                                                                                "Between 10p/uL and 100 p/uL", 
+                                                                                "Between 100p/uL and 1000p/ul", 
+                                                                                "Between 1,000p/ul and 10,000p/ul", 
+                                                                                "Above 10,000 p/ul"))
+
+table(All_Random_samples$qpcr_cat1)
+
+parasitemia_pos <- All_Random_samples %>% filter(qpcr_cat1 != "Negative")
+
+# Replace these with your actual column names
+actual_column <- 'Qpcr_result'
+predicted_column <- 'rdtrslt'
+parasitemia_column <- 'qpcr_cat1'
+
+# Function to calculate sensitivity and specificity
+calc_metrics <- function(data) {
+  confusionMatrix <- table(data[[actual_column]], data[[predicted_column]])
+  TP <- confusionMatrix[1, 1]
+  FN <- confusionMatrix[1, 2]
+  TN <- confusionMatrix[2, 2]
+  FP <- confusionMatrix[2, 1]
+  sensitivity <- TP / (TP + FN)
+  specificity <- TN / (TN + FP)
+  return(c(sensitivity, specificity))
+}
+
+# Calculate metrics for each parasitemia level
+results <- parasitemia_pos %>%
+  group_by(!!sym(parasitemia_column)) %>%
+  summarise(Sensitivity = calc_metrics(cur_data())[1],
+            Specificity = calc_metrics(cur_data())[2])
+
+# View results
+print(results)
+
+table(parasitemia_pos$qpcr_cat1)
+
+check <- parasitemia_pos %>% filter(qpcr_cat1 == "Above 10,000 p/ul" & rdtrslt == 0)
+
+
+```
+
+
+```{r, prevalence}
+# Prevalence of malaria in study pop based on Microscopy
+Prev <- (nrow(filter(All_Random_samples, BSdich == 1 )) / nrow(All_Random_samples)) 
+
+Prev # 31%
+
+confusionMatrix(data = All_Random_samples$rdtrslt,  reference = All_Random_samples$BSdich, positive = levels(All_Random_samples$BSdich)[1],
+                prevalence = Prev)
+
+
+```
+
+
+```{r}
+
+```
+
+```{r print_date_and_time}
+Sys.time()
+```
+
+```{r print_session_info}
+# sessionInfo()
+devtools::session_info()
+```
