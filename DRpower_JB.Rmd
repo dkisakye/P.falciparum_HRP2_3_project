@@ -1,0 +1,108 @@
+---
+title: "DRpower"
+output: html_document
+date: "2024-03-21"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(DRpower)
+library(tidyverse)
+library(haven)
+```
+
+
+```{r data, echo = FALSE}
+
+Household_data_12 <- read_dta("~/Documents/K23_LLINEUP2_12month_qPCR/hrp2_3_investigation/P.falciparum_HRP2_3_project-main/data_in/Household member level data 12 month survey_FINAL.dta") %>% 
+#  filter(age2to10consented == 1) %>%  #filter for ages 2-10 consented for clinical survey
+  select(mrccode, age, rdtdone, rdtrslt, BSdone, BSdich, fpbarcode1) %>% 
+  filter(rdtdone == 1 & BSdone == 1) 
+ 
+  Household_data_12_grouped <- Household_data_12 %>% 
+  mutate(n = 1) %>% 
+  group_by(mrccode) %>% 
+  summarize(n = sum(n))
+
+Household_data_24 <- read_dta("~/Documents/K23_LLINEUP2_12month_qPCR/hrp2_3_investigation/P.falciparum_HRP2_3_project-main/data_in/Household member level data 24 month survey_FINAL.dta") %>% 
+ # filter(age2to10consented == 1) %>%  #filter for ages 2-10 consented for clinical survey
+  select(mrccode, age, rdtdone, rdtrslt, BSdone, BSdich, fpbarcode1) %>% 
+  filter(rdtdone == 1 & BSdone == 1) %>% 
+  mutate(n = 1)
+
+Household_data_24_grouped <- Household_data_24 %>% 
+  mutate(n = 1) %>% 
+  group_by(mrccode) %>% 
+   summarize(n = sum(n))
+
+
+```
+
+
+
+```{r organize_data, echo=FALSE}
+
+#now combine across surveys
+Household_data_12_grouped <- Household_data_12 %>% 
+  mutate(n = 1) %>% 
+  group_by(mrccode) %>% 
+  summarize(n = sum(n))
+
+Household_data_24_grouped <- Household_data_24 %>% 
+  mutate(n = 1) %>% 
+  group_by(mrccode) %>% 
+  summarize(n = sum(n))
+
+Household_tog <- bind_rows(Household_data_12_grouped, Household_data_24_grouped) %>% 
+  group_by(mrccode) %>% 
+  summarize(n = sum(n))
+
+#ok data now in correct format for both surveys
+Household_tog <-  Household_tog %>% 
+  mutate(hrp3 = 0, hrp2 = 0) %>% 
+  mutate(hrp3 = ifelse(mrccode == 7, 1, 0)) #the only sample with an hrp3 deletion is B241 from MRC 7 
+
+# define observed data for both surveys, hrp3 deletions 
+num_hrp3_deletions <- Household_tog$hrp3
+sample_size <- Household_tog$n
+
+```
+
+## Calculate prevalence using DRpower (combining data from 12 and 24 month surveys by MRC)
+### Prevalence of hrp3 deletions 
+
+```{r prev, echo = FALSE }
+# estimate prevalence
+print("Estimate of hrp3 deletions")
+get_prevalence(n = num_hrp3_deletions,
+               N = sample_size)
+
+# estimate ICC
+print("Estimate of intra-cluster correlation")
+get_ICC(n = num_hrp3_deletions,
+        N = sample_size)
+
+```
+
+
+### Prevalence of hrp2 deletions 
+#### Same as prevalence of hrp2 and hrp3 deletions, since there are 0 
+```{r hrp2, echo = FALSE }
+# define observed data for both surveys, hrp2 deletions 
+num_hrp2_deletions <- Household_tog$hrp2
+sample_size <- Household_tog$n
+
+# estimate prevalence
+print("Estimate of hrp2 and hrp2/3 deletions")
+get_prevalence(n = num_hrp2_deletions,
+               N = sample_size)
+
+# estimate ICC
+print("Estimate of intra-cluster correlation")
+get_ICC(n = num_hrp2_deletions,
+        N = sample_size)
+
+#prevalence of double deletions would be the same as that for hrp2 deletions (0 at all sites)
+```
+
+
