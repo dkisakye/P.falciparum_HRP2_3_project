@@ -29,13 +29,15 @@ library(readxl)
 ### Import set 1 of re-read slides
 ```{r}
 
-microscopy_rereads_set1_rep1 <- read_xlsx("~/Documents/K23_LLINEUP2_12month_qPCR/hrp2_3_investigation/P.falciparum_HRP2_3_project-main/data_in/LLNEUP_Microscopy_read_results.xlsx", sheet = "LLN2-12months_BS_First_Read") %>% 
+# microscopy_rereads_set1_rep1 <- read_xlsx("~/Documents/K23_LLINEUP2_12month_qPCR/hrp2_3_investigation/P.falciparum_HRP2_3_project-main/data_in/LLNEUP_Microscopy_read_results.xlsx", sheet = "LLN2-12months_BS_First_Read") %>% 
+microscopy_rereads_set1_rep1 <- read_xlsx("../../../Hrp2:3/slide_re_reads/LLNEUP_Microscopy_read_results.xlsx", sheet = "LLN2-12months_BS_First_Read") %>% 
   select(`Study ID`, `Parasite density`, `Quality of slide`) %>% 
   rename(Parasite_density_Rep1 = `Parasite density`,
          Species_Rep1 = `Quality of slide`)
 
+# microscopy_rereads_set1_rep2 <- read_xlsx("~/Documents/K23_LLINEUP2_12month_qPCR/hrp2_3_investigation/P.falciparum_HRP2_3_project-main/data_in/LLNEUP_Microscopy_read_results.xlsx",sheet = "LLN2-12months_BS_Second_Read") %>% 
 microscopy_rereads_set1_rep2 <-
-  read_xlsx("~/Documents/K23_LLINEUP2_12month_qPCR/hrp2_3_investigation/P.falciparum_HRP2_3_project-main/data_in/LLNEUP_Microscopy_read_results.xlsx",sheet = "LLN2-12months_BS_Second_Read") %>% 
+  read_xlsx("../../../Hrp2:3/slide_re_reads/LLNEUP_Microscopy_read_results.xlsx",sheet = "LLN2-12months_BS_Second_Read") %>% 
    select(`Study ID`, `Parasite density`, `Quality of slide`) %>% 
     rename(Parasite_density_Rep2 = `Parasite density`,
          Species_Rep2 = `Quality of slide`)
@@ -63,12 +65,15 @@ microscopy_rereads_1 <- microscopy_rereads_1 %>%
 
 ### Import Set 2 of re-read slides
 ```{r}
-microscopy_rereads_set2_rep1<-read_xlsx("~/Documents/K23_LLINEUP2_12month_qPCR/hrp2_3_investigation/P.falciparum_HRP2_3_project-main/data_in/LLNEUP_Microscopy_read_results.xlsx", sheet = "LLN2-12months_BS_First_Read_S2") %>% 
+
+# microscopy_rereads_set2_rep1<-read_xlsx("~/Documents/K23_LLINEUP2_12month_qPCR/hrp2_3_investigation/P.falciparum_HRP2_3_project-main/data_in/LLNEUP_Microscopy_read_results.xlsx", sheet = "LLN2-12months_BS_First_Read_S2") %>% 
+microscopy_rereads_set2_rep1<-read_xlsx("../../../Hrp2:3/slide_re_reads/LLNEUP_Microscopy_read_results.xlsx", sheet = "LLN2-12months_BS_First_Read_S2") %>% 
   select(`Barcode`, `Parasite density`, `Quality of slide`) %>% 
   rename(Parasite_density_Rep1 = `Parasite density`,
          Species_Rep1 = `Quality of slide`)
 
-microscopy_rereads_set2_rep2<-read_xlsx("~/Documents/K23_LLINEUP2_12month_qPCR/hrp2_3_investigation/P.falciparum_HRP2_3_project-main/data_in/LLNEUP_Microscopy_read_results.xlsx", sheet = "LLN2-12months_BS_Second_Read_S2") %>% 
+# microscopy_rereads_set2_rep2<-read_xlsx("~/Documents/K23_LLINEUP2_12month_qPCR/hrp2_3_investigation/P.falciparum_HRP2_3_project-main/data_in/LLNEUP_Microscopy_read_results.xlsx", sheet = "LLN2-12months_BS_Second_Read_S2") %>% 
+microscopy_rereads_set2_rep2<-read_xlsx("../../../Hrp2:3/slide_re_reads/LLNEUP_Microscopy_read_results.xlsx", sheet = "LLN2-12months_BS_Second_Read_S2") %>% 
   select(`Barcode`, `Parasite density`, `Quality of slide`) %>% 
   rename(Parasite_density_Rep2 = `Parasite density`,
          Species_Rep2 = `Quality of slide`)
@@ -91,15 +96,20 @@ Parasite_density_Rep1 > 1 & Parasite_density_Rep2 > 1 & is.na(Species_Rep1)  &  
 
 ### Import Set 3 of re-read slides
 ```{r}
-microscopy_rereads_set3_rep1<-read_xlsx("~/Documents/K23_LLINEUP2_12month_qPCR/hrp2_3_investigation/P.falciparum_HRP2_3_project-main/data_in/LLNEUP_Microscopy_read_results.xlsx", sheet = "LLN2-24months_BS_First_Read") %>% 
+# microscopy_rereads_set3_rep1<-read_xlsx("~/Documents/K23_LLINEUP2_12month_qPCR/hrp2_3_investigation/P.falciparum_HRP2_3_project-main/data_in/LLNEUP_Microscopy_read_results.xlsx", sheet = "LLN2-24months_BS_First_Read") %>% 
+
+microscopy_rereads_set3_rep1<-read_xlsx("../../../Hrp2:3/slide_re_reads/LLNEUP_Microscopy_read_results.xlsx", sheet = "LLN2-24months_BS_First_Read") %>% 
   select(`Barcode`, `Parasite density`, `Quality of slide`) %>% 
   rename(Parasite_density_Rep1 = `Parasite density`,
          Species_Rep1 = `Quality of slide`)
 
-microscopy_rereads_set3_rep2<-read_xlsx("~/Documents/K23_LLINEUP2_12month_qPCR/hrp2_3_investigation/P.falciparum_HRP2_3_project-main/data_in/LLNEUP_Microscopy_read_results.xlsx", sheet = "LLN2-24months_BS_Second_read") %>% 
+# microscopy_rereads_set3_rep2<-read_xlsx("~/Documents/K23_LLINEUP2_12month_qPCR/hrp2_3_investigation/P.falciparum_HRP2_3_project-main/data_in/LLNEUP_Microscopy_read_results.xlsx", sheet = "LLN2-24months_BS_Second_read") %>% 
+ 
+microscopy_rereads_set3_rep2<-read_xlsx("../../../Hrp2:3/slide_re_reads/LLNEUP_Microscopy_read_results.xlsx", sheet = "LLN2-24months_BS_Second_read") %>% 
   select(`Barcode`, `Parasite density`, `Quality of slide`) %>% 
   rename(Parasite_density_Rep2 = `Parasite density`,
          Species_Rep2 = `Quality of slide`)
+
 
 microscopy_rereads_3 <- merge(microscopy_rereads_set3_rep1, microscopy_rereads_set3_rep2, by.x = "Barcode" , by.y = "Barcode", all.x = TRUE, all.y = TRUE ) %>% 
   mutate(QC = case_when(
@@ -142,8 +152,9 @@ length(distinct_ids$`Study Subject`) # 75
 
 # merge with var_ATS results to get barcodes
 
-var_ATS_data <- read_csv("~/Documents/K23_LLINEUP2_12month_qPCR/hrp2_3_investigation/P.falciparum_HRP2_3_project-main/data_in/all_LN2_qpcr.csv")
+# var_ATS_data <- read_csv("~/Documents/K23_LLINEUP2_12month_qPCR/hrp2_3_investigation/P.falciparum_HRP2_3_project-main/data_in/all_LN2_qpcr.csv")
 
+var_ATS_data <- read_csv("../../data_in/all_LN2_qpcr.csv")
 var_ATS_data <- var_ATS_data %>% 
   transmute(`Sample Name`, Quantity_by_qpcr = qpcr,
             `Study Subject`,`Amp Status`, `Ct Threshold` )
@@ -160,7 +171,9 @@ all_sps_results_merge$`Sample Name` <- as.character(all_sps_results_merge$`Sampl
 ### Import Species pcr results
 ```{r}
 
-sps_pcr <- read_csv("~/Documents/K23_LLINEUP2_12month_qPCR/hrp2_3_investigation/P.falciparum_HRP2_3_project-main/data_in/varATS_neg_LN2_samples_spp_gel_layout&results_calls - spp_results_calls.csv")
+# sps_pcr <- read_csv("~/Documents/K23_LLINEUP2_12month_qPCR/hrp2_3_investigation/P.falciparum_HRP2_3_project-main/data_in/varATS_neg_LN2_samples_spp_gel_layout&results_calls - spp_results_calls.csv")
+
+sps_pcr <- read_csv("../../species_pcr/varATS_neg_LN2_samples_spp_gel_layout&results_calls - spp_results_calls.csv")
 
 sps_pcr <- sps_pcr %>% 
   transmute(Barcode = `Samples/Controls`, Pf, Pm, Po, Pv) 
