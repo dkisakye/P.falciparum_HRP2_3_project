@@ -256,7 +256,9 @@ missing_sample <- filter(var_ATS_data, `Sample Name` == "4064903947")
 if ("4064903947" %in% merged_sps_pcr_slide_rereads_2$Barcode){
   data_missing_sample <- missing_sample
   merged_sps_pcr_slide_rereads_2$`Study Subject`[merged_sps_pcr_slide_rereads_2$Barcode == "4064903947"] <- data_missing_sample$`Study Subject`
-
+merged_sps_pcr_slide_rereads_2$Quantity_by_qpcr[merged_sps_pcr_slide_rereads_2$Barcode == "4064903947"] <- data_missing_sample$Quantity_by_qpcr
+merged_sps_pcr_slide_rereads_2$`Amp Status`[merged_sps_pcr_slide_rereads_2$Barcode == "4064903947"] <- data_missing_sample$`Amp Status`
+merged_sps_pcr_slide_rereads_2$`Ct Threshold`[merged_sps_pcr_slide_rereads_2$Barcode == "4064903947"] <- data_missing_sample$`Ct Threshold`
 }
 
 # Some pf mono infections identified by sps PCR, which is strange. Checking their parasite density
@@ -266,6 +268,8 @@ pf <-filter(merged_sps_pcr_slide_rereads_2, Sps_call == "Pf")
 # Save results of slide rereads and pcr
 
 # write_csv(merged_sps_pcr_slide_rereads_2, "../../data_out/Merged_sps_pcr_and_slide_rereads_07_03_2024.csv")
+
+# write_csv(pf, "../../data_out/pf_species_calls.csv")
 
 table(merged_sps_pcr_slide_rereads_2$Concordant)
 
@@ -282,6 +286,25 @@ Concordant_by_pcr <- filter(merged_sps_pcr_slide_rereads_2, Concordant == 1)
 Concordant_by_pcr_sub <- Concordant_by_pcr %>% 
   select(Barcode, Quantity_by_qpcr, Overall_call_pcr, Overall_call_slide_reread, Concordant)
 
+```
+### Take a look at samples with varATS results with some amplification, but don't meet our threshold for a positive result
+```{r}
+table(merged_sps_pcr_slide_rereads_2$`Amp Status`) 
+
+
+Amp <- filter(merged_sps_pcr_slide_rereads_2, `Amp Status` == "Amp")
+
+table(Amp$Overall_call_pcr)
+
+summary(Amp$Quantity_by_qpcr)
+
+
+
+ggplot(Amp, aes(x=Sps_call, y= Quantity_by_qpcr, color = Sps_call ))+
+  geom_boxplot()+
+  scale_x_discrete(labels= c("false +", "mixed", "Pf", "Pm", "Po"))
+
+No_amp <-filter(merged_sps_pcr_slide_rereads_2, `Amp Status` == "No Amp")
 ```
 
 
