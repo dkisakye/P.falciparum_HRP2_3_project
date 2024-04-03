@@ -30,6 +30,7 @@ library(writexl)
 library(reshape2)
 library(readr)
 library(readstata13)
+library(kableExtra)
 ```
 
 ## Extract the samples from the 12-Month survey data
@@ -51,7 +52,7 @@ unique_ids<- Household_data_12 %>%
 
 ```
 
-## Now find the discordant samples ie BS positive and RDT negative
+## Find the discordant samples from 12-Month survey data ie BS positive and RDT negative
 ```{r }
 RDT_Neg_and_BS_pos_12 <- Household_data_12 %>%
                     select(rdtrslt, BSdich, parasitedensity, fpbarcode1)  %>%
@@ -67,7 +68,7 @@ paste0("No of discordant samples in LLN12:", no_discordant_LLN12)
 
 
 
-## Extract samples from LLN24
+## Extract samples from 24-Month survey data
 ```{r}
 Household_data_24 <- read.dta13("../../../LineUP2/Household member level data 24 month survey_FINAL.dta", convert.factors = TRUE, generate.factors = TRUE,
                          encoding = "UTF-8", fromEncoding = NULL, convert.underscore = FALSE,
@@ -83,7 +84,7 @@ unique_ids_24 <- Household_data_24 %>%
 
 ```
 
-## Extract the discordant samples from the 24-Month survey data
+## Find the discordant samples from the 24-Month survey data
 ```{r}
 RDT_Neg_and_BS_pos_24 <- Household_data_24 %>%
                     select(rdtrslt, BSdich, parasitedensity, fpbarcode1)  %>%
@@ -104,15 +105,15 @@ all_discordant <- rbind(RDT_Neg_and_BS_pos_12, RDT_Neg_and_BS_pos_24)
 # write_csv(all_discordant, "../../data_out/Discordant_sample_list_LLINE12_LLNE24")
 ```
 
-## Summarising characteristics of the LLN12 and LLN24 discordant samples
+## Summarise characteristics of the LLN12 and LLN24 discordant samples
 ```{r}
 Characteristics_discordant_12 <- Household_data_12 %>%
   filter(rdtrslt == "Negative" & BSdich == "Positive") %>% 
-  select(fpbarcode1, rdtrslt, BSdich, gender, ageyrs, gender,inclusion_criteria, temperature,agecat, mrccode, Region)
+  select(fpbarcode1, rdtrslt, BSdich, gender, ageyrs, gender, temperature,agecat, mrccode, Region)
 
 Characteristics_discordant_24 <- Household_data_24 %>%
   filter(rdtrslt == "Negative" & BSdich == "Positive")  %>% 
-  select(fpbarcode1, rdtrslt, BSdich, gender, ageyrs, gender, temperature, mrccode, agecat,inclusion_criteria, Region)
+  select(fpbarcode1, rdtrslt, BSdich, gender, ageyrs, gender, temperature,agecat, mrccode, Region)
 
 Characteristics_discordant_12_24 <- rbind(Characteristics_discordant_12, Characteristics_discordant_24)
 
@@ -148,6 +149,12 @@ quantile(Characteristics_discordant_12_24_merged$ageyrs, probs =seq(from = 0.25 
 #25% 50% 75% 
  # 3   6   8 
 
+Q1_age_discordant <- quantile(Characteristics_discordant_12_24_merged$ageyrs, probs =seq(from = 0.25 ,to =0.75, by = 0.25))[[1]]
+Q1_age_discordant
+
+Q3_age_discordant <-quantile(Characteristics_discordant_12_24_merged$ageyrs, probs =seq(from = 0.25 ,to =0.75, by = 0.25))[[3]]
+Q3_age_discordant
+
 paste0("Median_age is ", Summary_age_discordant[1,1], " and IQR is " , Summary_age_discordant[1,2])
 
 range(Characteristics_discordant_12_24_merged$ageyrs)
@@ -177,8 +184,6 @@ Proportion_age_categories_2 <-Characteristics_discordant_12_24_merged %>%
   count(age_cat2) %>% 
   mutate(proportion = round(n/sum(n)*100))
 
-# Export summarised age categories
-# write_csv(Proportion_age_categories_2, "../../data_out/Age_categories_discordant_samples.csv")
 
 # Gender of participants: 1 is male . 2 is female
 Proportion_gender_12_24 <-Characteristics_discordant_12_24_merged %>% 
@@ -190,8 +195,10 @@ Proportion_region_12_24 <-Characteristics_discordant_12_24_merged %>%
   count(Region) %>% 
   mutate(proportion = round(n/sum(n)*100))
 
-# Export_ region summary
-#write_csv(Proportion_region_12_24, "../../data_out/Regions_for_discordant_samples.csv")
+kable(Proportion_region_12_24, format = "html", col.names = c("Region", "n", "Proportion"),
+  caption = "Region information for discordant samples"   )%>%
+  kable_styling(bootstrap_options = c("striped", "hover"))
+
 
 # How many had detectable fever?
 Fever_status_12_24 <- Characteristics_discordant_12_24_merged%>%
@@ -205,13 +212,22 @@ round(proportion_fever) #
  
 # Categorise parasite density by microscopy and summarise it
 
-
 Summary_parasite_density <- Characteristics_discordant_12_24_merged %>% 
   mutate(Parasitemia_threshold = ifelse(parasitedensity < 1000, 0,1 )) %>%
   count(Parasitemia_threshold) %>% 
   mutate(Proportion = round(n/sum(n)*100))
 
-Summary_table <- data.frame( 
+ quantile(Characteristics_discordant_12_24_merged$parasitedensity, probs =seq(from = 0.25 ,to =0.75, by = 0.25))
+
+ Q1_discordant <-quantile(Characteristics_discordant_12_24_merged$parasitedensity, probs =seq(from = 0.25 ,to =0.75, by = 0.25))[[1]]
+ 
+ Q1_discordant
+ 
+ Q3_discordant <-quantile(Characteristics_discordant_12_24_merged$parasitedensity, probs =seq(from = 0.25 ,to =0.75, by = 0.25))[[3]]
+ 
+ Q3_discordant
+ 
+Summary_table_discordant <- data.frame( 
 N = nrow(Characteristics_discordant_12_24_merged),
 Age_less_5 = Proportion_age_categories_2[2,2],
 Prop_less_5 = Proportion_age_categories_2[2,3],
@@ -219,19 +235,25 @@ Age_5_to_10 = Proportion_age_categories_2[1,2],
 Prop_5_to_10 = Proportion_age_categories_2[1,3],
 Age_greater_10 = Proportion_age_categories_2[3,2],
 Prop_greater_10 = Proportion_age_categories_2[3,3],
-Median_age = Summary_age_discordant[1,1],
-IQR_age= Summary_age_discordant[1,2],
+Median_age = paste0(Summary_age_discordant[1,1], " (", Q1_age_discordant, "-", Q3_age_discordant, ")"), 
+#IQR_age= Summary_age_discordant[1,2],
 Male = Proportion_gender_12_24[1,2],
 Prop_male = Proportion_gender_12_24[1,3],
 Fever = nrow(Fever_status_12_24),
 Prop_fever = round(proportion_fever),
 Parasitemia_less_1000 =  Summary_parasite_density[1,2],
 Prop_parasitemia_less_1000 = Summary_parasite_density[1,3],
-Median_parasite_density = median(Characteristics_discordant_12_24_merged$parasitedensity),
-IQR_parasite_density= IQR(Characteristics_discordant_12_24_merged$parasitedensity),
+Median_parasite_density = paste0(median(Characteristics_discordant_12_24_merged$parasitedensity), " (", Q1_discordant, "-", Q3_discordant, ")"),
+#IQR_parasite_density= #IQR(Characteristics_discordant_12_24_merged$parasitedensity),
 row.names = "LN12 and 24"
   )
 
+
+transposed_table_discordant <-t(Summary_table_discordant)
+
+kable(transposed_table_discordant, format = "html", col.names = c("Characteristics", "Value"), 
+      caption = " Characteristics of discordant LLIN12 and LLIN24 samples") %>%
+  kable_styling(bootstrap_options = c("striped", "hover"))
 
 #names(Summary_table) <- c("N","Age ≤  5", "Prop ≤  5yrs", "Age > 5","Prop >5", "Median_age", "IQR_age", "Gender (M)", "Proportion Gender", "Fever", "Proportion Fever", "Parasitemia ≤ 100", "Proportion Parasitemia ≤  100", "Median_parasite_density", "IQR_parasite_density" )
 
@@ -241,7 +263,7 @@ row.names = "LN12 and 24"
 
  #write_csv(Summary_table, "../../data_out/Table_characteristics_LLNEUP_166_discordant_samples_06032024.csv")
   
- quantile(Characteristics_discordant_12_24_merged$parasitedensity)
+
 ```
 
 
@@ -257,6 +279,7 @@ Household_data_12 <- Household_data_12 %>%
                   rdtdone == "-9" ~ NA_integer_ ),
           BSdone = factor(BSdone))
 
+Household_data_12$rdtdone <- factor(Household_data_12$rdtdone)
 
 filter_12 <- Household_data_12 %>% 
  filter(rdtdone == 1 & BSdone == 1)
@@ -271,7 +294,7 @@ Household_data_24 <- Household_data_24 %>%
                   rdtdone == "-9" ~ NA_integer_),
          BSdone = factor(BSdone))
 
-Household_data_24$BSdone <-factor(Household_data_24$BSdone)
+Household_data_24$rdtdone <-factor(Household_data_24$rdtdone)
 
 filter_24 <- Household_data_24 %>% 
   filter(rdtdone == 1 & BSdone == 1 )
@@ -317,6 +340,148 @@ Prop_discordant_overall <- round((nrow(RDT_Neg_and_BS_pos_12)+ nrow(RDT_Neg_and_
 
 
 paste0(" Proportion of RDT negative and BS positive samples in both LLN12 and LLN24 samples: ", Prop_discordant_overall)
+
+```
+## Summarise characteristics of concordant samples ie BS positive and Microscopy positive
+```{r}
+Characteristics_concordant_12 <- Household_data_12 %>%
+                mutate(Concordant_result = case_when(
+              rdtrslt == "Positive" & BSdich == "Positive" ~ 1,
+              #rdtrslt == "Negative" & BSdich == "Negative" ~ 1,
+              TRUE ~ 0
+                )) %>%
+              filter(Concordant_result == 1) %>% 
+                select(fpbarcode1, rdtrslt, BSdich, gender, ageyrs, gender,inclusion_criteria, temperature,agecat, mrccode, Region, Concordant_result, parasitedensity)
+
+
+Characteristics_concordant_24 <- Household_data_24 %>%
+  mutate(Concordant_result = case_when(
+              rdtrslt == "Positive" & BSdich == "Positive" ~ 1,
+              #rdtrslt == "Negative" & BSdich == "Negative" ~ 1,
+              TRUE ~ 0
+                )) %>%
+              filter(Concordant_result == 1) %>% 
+                select(fpbarcode1, rdtrslt, BSdich, gender, ageyrs, gender,inclusion_criteria, temperature,agecat, mrccode, Region, Concordant_result, parasitedensity)
+                
+
+
+Characteristics_concordant_12_24 <- rbind(Characteristics_concordant_12, Characteristics_concordant_24)
+
+Characteristics_concordant_12_24$rdtrslt <- factor(Characteristics_concordant_12_24$rdtrslt, levels = c( "Negative", "Positive"))
+
+Characteristics_concordant_12_24$BSdich<- factor(Characteristics_concordant_12_24$BSdich, levels = c( "Negative", "Positive"))
+
+# Convert to numeric
+Characteristics_concordant_12_24$rdtrslt <- factor(as.numeric(Characteristics_concordant_12_24$rdtrslt) -1)
+
+Characteristics_concordant_12_24$BSdich <- factor(as.numeric(Characteristics_concordant_12_24$BSdich) - 1)
+
+Characteristics_concordant_12_24$temperature<- as.numeric(as.character(Characteristics_concordant_12_24$temperature))
+
+
+# Quantiles
+quantile(Characteristics_concordant_12_24$ageyrs, probs =seq(from = 0.25 ,to =0.75, by = 0.25))
+
+#25% 50% 75% 
+ # 3   6   9
+
+paste0("Median_age is ", median(Characteristics_concordant_12_24$ageyrs), " and IQR is " , IQR(Characteristics_concordant_12_24$ageyrs))
+
+range(Characteristics_concordant_12_24$ageyrs)
+
+ggplot(Characteristics_concordant_12_24, aes(x = ageyrs)) +
+  geom_histogram()
+
+# Breakdown age
+
+Proportion_age_categories_concordant <-Characteristics_concordant_12_24 %>% 
+  count(agecat) %>% 
+  mutate(proportion = round(n/sum(n)*100))
+
+# Make column for new age categories < 5, 5-10, >10 years
+
+Characteristics_concordant_12_24$ageyrs <- round(Characteristics_concordant_12_24$ageyrs, 0)
+
+range(Characteristics_concordant_12_24$ageyrs)
+
+Characteristics_concordant_12_24 <- Characteristics_concordant_12_24 %>% 
+  mutate(age_cat2 = factor(case_when(
+  ageyrs < 5 ~ "< 5 years",
+  ageyrs >= 5 & ageyrs <= 10 ~ "5 - 10 years",
+  ageyrs > 10 ~ "> 10 years"
+  )))
+
+
+Proportion_age_categories_concordant_2 <-Characteristics_concordant_12_24 %>% 
+  count(age_cat2) %>% 
+  mutate(proportion = n/sum(n)*100)
+
+
+# Gender of participants: 1 is male . 2 is female
+Proportion_gender_concordant_12_24 <-Characteristics_concordant_12_24 %>% 
+  count(gender) %>% 
+  mutate(proportion = round(n/sum(n)*100))
+
+# Region
+Proportion_region_concordant_12_24 <-Characteristics_concordant_12_24 %>% 
+  count(Region) %>% 
+  mutate(proportion = round(n/sum(n)*100))
+
+kable(Proportion_region_concordant_12_24, format = "html", col.names = c("Region", "n", "Proportion"),
+  caption = "Region information for concordant samples"   )%>%
+  kable_styling(bootstrap_options = c("striped", "hover"))
+
+
+# How many had detectable fever?
+Fever_status_concordant_12_24 <- Characteristics_concordant_12_24%>%
+  filter(temperature >= 37.5)
+
+unique(nrow(Fever_status_concordant_12_24)) # 
+
+Proportion_fever_concordant <- unique(nrow(Fever_status_concordant_12_24))/nrow(Characteristics_concordant_12_24) *100
+
+round(Proportion_fever_concordant) # 
+ 
+# Categorise parasite density by microscopy and summarise it
+
+
+Summary_parasite_density_concordant <- Characteristics_concordant_12_24 %>% 
+  mutate(Parasitemia_threshold = ifelse(parasitedensity < 1000, 0,1 )) %>%
+  count(Parasitemia_threshold) %>% 
+  mutate(Proportion = round(n/sum(n)*100))
+
+quantile(Characteristics_concordant_12_24$parasitedensity, probs =seq(from = 0.25 ,to =0.75, by = 0.25))
+
+Q1_concordant <-quantile(Characteristics_concordant_12_24$parasitedensity, probs =seq(from = 0.25 ,to =0.75, by = 0.25))[[1]]
+
+Q3_concordant <-quantile(Characteristics_concordant_12_24$parasitedensity, probs =seq(from = 0.25 ,to =0.75, by = 0.25))[[3]]
+
+
+Summary_table_concordant <- data.frame( 
+N = nrow(Characteristics_concordant_12_24),
+Age_less_5 = Proportion_age_categories_concordant_2[1,2],
+Prop_less_5 = Proportion_age_categories_concordant_2[1,3],
+Age_5_to_10 = Proportion_age_categories_concordant_2[3,2],
+Prop_5_to_10 = Proportion_age_categories_concordant_2[3,3],
+Age_greater_10 = Proportion_age_categories_concordant_2[2,2],
+Prop_greater_10 = Proportion_age_categories_concordant_2[2,3],
+Median_age = median(Characteristics_concordant_12_24$ageyrs),
+#Quantile_age = quantile(Characteristics_concordant_12_24$ageyrs, probs = seq(from = 0.25 ,to =0.75, by = 0.25)),
+Male = Proportion_gender_concordant_12_24[1,2],
+Prop_male = Proportion_gender_concordant_12_24[1,3],
+Fever = nrow(Fever_status_concordant_12_24),
+Prop_fever = round(Proportion_fever_concordant),
+Parasitemia_less_1000 = Summary_parasite_density_concordant[1,2],
+Prop_parasitemia_less_1000 = Summary_parasite_density_concordant[1,3],
+Median_parasite_density = paste0(median(Characteristics_concordant_12_24$parasitedensity), " (", Q1_concordant, "-", Q3_concordant, ")"),
+row.names = "LN12 and 24 concordant"
+  )
+
+transposed_table_concordant <-t(Summary_table_concordant)
+
+kable(transposed_table_concordant, format = "html", col.names = c("Characteristics", "Value"), 
+      caption = " Characteristics of concordant LLIN12 and LLIN24 samples") %>%
+  kable_styling(bootstrap_options = c("striped", "hover"))
 
 ```
 
