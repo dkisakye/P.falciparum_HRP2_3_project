@@ -63,7 +63,13 @@ Household_data_24 <-read_dta("../../../LineUP2/Household member level data 24 mo
 # Take a look at a summary of the rdt and bs data
  table(Household_data$rdtrslt) # rdt result not available/not done for some
  
- table(Household_data$BSdich)
+ table(Household_data$BSdone)
+ 
+ table(Household_data$BSdich) # looking a microscopy data  
+ 
+ Household_data_bs_and_rdt_pos <- Household_data %>% 
+   filter(rdtrslt == 1 & BSdich == 1)
+ 
  
 # First filter to keep only observations where rdt and bs were done -- JB comment: in 2 to 10yos only
  Household_data_trim <-Household_data %>% 
