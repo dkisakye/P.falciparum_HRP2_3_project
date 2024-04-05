@@ -14,7 +14,8 @@ library(haven)
 
 ```{r data, echo = FALSE}
 
-Household_data_12 <- read_dta("~/Documents/K23_LLINEUP2_12month_qPCR/hrp2_3_investigation/P.falciparum_HRP2_3_project-main/data_in/Household member level data 12 month survey_FINAL.dta") %>% 
+#Household_data_12 <- read_dta("~/Documents/K23_LLINEUP2_12month_qPCR/hrp2_3_investigation/P.falciparum_HRP2_3_project-main/data_in/Household member level data 12 month survey_FINAL.dta") %>% 
+Household_data_12 <-read_dta("../../../LineUP2/Household member level data 12 month survey_FINAL.dta") %>% 
 #  filter(age2to10consented == 1) %>%  #filter for ages 2-10 consented for clinical survey
   select(mrccode, age, rdtdone, rdtrslt, BSdone, BSdich, fpbarcode1) %>% 
   filter(rdtdone == 1 & BSdone == 1) 
@@ -24,7 +25,8 @@ Household_data_12 <- read_dta("~/Documents/K23_LLINEUP2_12month_qPCR/hrp2_3_inve
   group_by(mrccode) %>% 
   summarize(n = sum(n))
 
-Household_data_24 <- read_dta("~/Documents/K23_LLINEUP2_12month_qPCR/hrp2_3_investigation/P.falciparum_HRP2_3_project-main/data_in/Household member level data 24 month survey_FINAL.dta") %>% 
+# Household_data_24 <- read_dta("~/Documents/K23_LLINEUP2_12month_qPCR/hrp2_3_investigation/P.falciparum_HRP2_3_project-main/data_in/Household member level data 24 month survey_FINAL.dta") %>% 
+  Household_data_24 <-read_dta("../../../LineUP2/Household member level data 24 month survey_FINAL.dta") %>% 
  # filter(age2to10consented == 1) %>%  #filter for ages 2-10 consented for clinical survey
   select(mrccode, age, rdtdone, rdtrslt, BSdone, BSdich, fpbarcode1) %>% 
   filter(rdtdone == 1 & BSdone == 1) %>% 
