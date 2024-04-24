@@ -113,7 +113,6 @@ spec_by_bs
 
 ## Try making a nice table of the above results
 ```{r, kable1} 
-
 # Example data (replace with your data)
 actual <- Household_data_trim$BSdich
 predicted <- Household_data_trim$rdtrslt
@@ -182,7 +181,8 @@ var_ATS_data <- read_csv("../../data_in/all_LN2_qpcr.csv")
   left_join(var_ATS_data, by= join_by(fpbarcode1 == `Study Subject`))
  
  # Create a new variable categorical variable for qpcr result
- All_Random_samples$qpcr <- round(All_Random_samples$qpcr, 3) #rounded to 3 instead
+ All_Random_samples$qpcr <- round(All_Random_samples$qpcr, 0) 
+ 
  All_Random_samples$Qpcr_result <- ifelse(All_Random_samples$qpcr <= 1, 0, 1)
  
 
@@ -196,7 +196,7 @@ All_Random_samples$Qpcr_result <- factor(All_Random_samples$Qpcr_result, levels 
 # Sensitivity (qPCR)
 sensitivity_by_qpcr <-round(sensitivity(All_Random_samples$rdtrslt, All_Random_samples$Qpcr_result, positive = levels(All_Random_samples$Qpcr_result)[1]) * 100, 0)
 
-sensitivity_by_qpcr # 90
+sensitivity_by_qpcr
 
 # Double check manually
 
@@ -206,7 +206,7 @@ false_neg_qpcr <- filter(All_Random_samples, rdtrslt == 0 & Qpcr_result == 1 )
 
 sensitivity_check_qpcr <- round(nrow(true_pos_qpcr)/(nrow(true_pos_qpcr) + nrow(false_neg_qpcr)) * 100, 0)
 
-sensitivity_check_qpcr # Also 90
+sensitivity_check_qpcr 
 
 #sensitivity (microscopy in random Sample)
 sensitivity_by_microscopy <-round(sensitivity(All_Random_samples$rdtrslt, All_Random_samples$BSdich, positive = levels(All_Random_samples$BSdich)[1]) * 100, 0)
@@ -262,7 +262,7 @@ spec_by_qPCR # 64
 # Negative predictive value by qPCR
 neg_Pred_by_qPCR <- round(negPredValue( All_Random_samples$rdtrslt, All_Random_samples$Qpcr_result, negative = levels(All_Random_samples$Qpcr_result)[-1])* 100, 0) # 
 
-neg_Pred_by_qPCR # 92
+neg_Pred_by_qPCR 
 ```
 
 ### Make another table 

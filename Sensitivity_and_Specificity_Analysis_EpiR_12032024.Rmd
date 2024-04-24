@@ -87,7 +87,7 @@ positives_by_BS_LLN12_24 <- filter(LLN12_24_data, BSdich == 1)
 
 # Calculate sensitivity
   # create a matrix to display these data
-input_values_1 <- c(true_pos_LLNEUP12_24, false_pos_LLNEUP12_24, false_neg_LLNEUP12_24,true_neg_LLNEUP12_24 )
+input_values_1 <- c(true_pos_LLNEUP12_24, false_pos_LLNEUP12_24, false_neg_LLNEUP12_24, true_neg_LLNEUP12_24 )
 
 matrix_1 <- as.table(matrix(input_values_1, nrow = 2, byrow = TRUE ))
 matrix_1

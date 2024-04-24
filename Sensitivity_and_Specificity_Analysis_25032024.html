@@ -891,7 +891,8 @@ var_ATS_data &lt;- read_csv(&quot;../../data_in/all_LN2_qpcr.csv&quot;)</code></
   left_join(var_ATS_data, by= join_by(fpbarcode1 == `Study Subject`))
  
  # Create a new variable categorical variable for qpcr result
- All_Random_samples$qpcr &lt;- round(All_Random_samples$qpcr, 3) #rounded to 3 instead
+ All_Random_samples$qpcr &lt;- round(All_Random_samples$qpcr, 0) 
+ 
  All_Random_samples$Qpcr_result &lt;- ifelse(All_Random_samples$qpcr &lt;= 1, 0, 1)
  
 
@@ -905,8 +906,8 @@ All_Random_samples$Qpcr_result &lt;- factor(All_Random_samples$Qpcr_result, leve
 # Sensitivity (qPCR)
 sensitivity_by_qpcr &lt;-round(sensitivity(All_Random_samples$rdtrslt, All_Random_samples$Qpcr_result, positive = levels(All_Random_samples$Qpcr_result)[1]) * 100, 0)
 
-sensitivity_by_qpcr # 90</code></pre>
-<pre><code>## [1] 90</code></pre>
+sensitivity_by_qpcr</code></pre>
+<pre><code>## [1] 92</code></pre>
 <pre class="r"><code># Double check manually
 
 true_pos_qpcr &lt;- filter(All_Random_samples, rdtrslt == 1 &amp; Qpcr_result == 1)
@@ -915,8 +916,8 @@ false_neg_qpcr &lt;- filter(All_Random_samples, rdtrslt == 0 &amp; Qpcr_result =
 
 sensitivity_check_qpcr &lt;- round(nrow(true_pos_qpcr)/(nrow(true_pos_qpcr) + nrow(false_neg_qpcr)) * 100, 0)
 
-sensitivity_check_qpcr # Also 90</code></pre>
-<pre><code>## [1] 90</code></pre>
+sensitivity_check_qpcr </code></pre>
+<pre><code>## [1] 92</code></pre>
 <pre class="r"><code>#sensitivity (microscopy in random Sample)
 sensitivity_by_microscopy &lt;-round(sensitivity(All_Random_samples$rdtrslt, All_Random_samples$BSdich, positive = levels(All_Random_samples$BSdich)[1]) * 100, 0)
 
@@ -969,8 +970,8 @@ spec_by_qPCR # 64</code></pre>
 <pre class="r"><code># Negative predictive value by qPCR
 neg_Pred_by_qPCR &lt;- round(negPredValue( All_Random_samples$rdtrslt, All_Random_samples$Qpcr_result, negative = levels(All_Random_samples$Qpcr_result)[-1])* 100, 0) # 
 
-neg_Pred_by_qPCR # 92</code></pre>
-<pre><code>## [1] 90</code></pre>
+neg_Pred_by_qPCR </code></pre>
+<pre><code>## [1] 92</code></pre>
 </div>
 <div id="make-another-table" class="section level3">
 <h3>Make another table</h3>
@@ -1013,8 +1014,8 @@ metrics2 &lt;- calc_metrics(confusionMatrix2)
 confusionMatrix2</code></pre>
 <pre><code>##       Predicted
 ## Actual   1   0
-##      1 121  13
-##      0  67 119</code></pre>
+##      1 120  11
+##      0  68 121</code></pre>
 <pre class="r"><code># Combine results into a data frame for nice formatting
 results &lt;- data.frame(
   Measure = c(&quot;True Positives (TP)&quot;, &quot;False Positives (FP)&quot;, &quot;True Negatives (TN)&quot;, &quot;False Negatives (FN)&quot;, 
@@ -1054,7 +1055,7 @@ True Positives (TP)
 91.00
 </td>
 <td style="text-align:right;">
-121.00
+120.00
 </td>
 </tr>
 <tr>
@@ -1065,7 +1066,7 @@ False Positives (FP)
 97.00
 </td>
 <td style="text-align:right;">
-67.00
+68.00
 </td>
 </tr>
 <tr>
@@ -1076,7 +1077,7 @@ True Negatives (TN)
 125.00
 </td>
 <td style="text-align:right;">
-119.00
+121.00
 </td>
 </tr>
 <tr>
@@ -1087,7 +1088,7 @@ False Negatives (FN)
 7.00
 </td>
 <td style="text-align:right;">
-13.00
+11.00
 </td>
 </tr>
 <tr>
@@ -1098,7 +1099,7 @@ Sensitivity
 0.93
 </td>
 <td style="text-align:right;">
-0.90
+0.92
 </td>
 </tr>
 <tr>
@@ -1131,7 +1132,7 @@ Negative Predictive Value (NPV)
 0.95
 </td>
 <td style="text-align:right;">
-0.90
+0.92
 </td>
 </tr>
 </tbody>
@@ -1141,7 +1142,7 @@ Negative Predictive Value (NPV)
 <h3>False positivity rate using qPCR as gold standard</h3>
 <pre class="r"><code>pcr_metrics &lt;-calc_metrics(confusionMatrix2)
 pcr_metrics</code></pre>
-<pre><code>## [1] 121.00  67.00 119.00  13.00   0.90   0.64   0.64   0.90</code></pre>
+<pre><code>## [1] 120.00  68.00 121.00  11.00   0.92   0.64   0.64   0.92</code></pre>
 <pre class="r"><code>false_positivity_rate_qpcr &lt;- round(pcr_metrics[2]/(pcr_metrics[1] + pcr_metrics[2]) *100, 0)
 
 false_positivity_rate_qpcr</code></pre>
@@ -1171,9 +1172,9 @@ All_Random_samples$qpcr_cat1 &lt;- factor(All_Random_samples$qpcr_cat1, levels =
 table(All_Random_samples$qpcr_cat1)</code></pre>
 <pre><code>## 
 ##                         Negative     Less than or equal to 1 p/ul 
-##                              109                               77 
+##                              174                               15 
 ##        Between 1p/uL and 10 p/uL      Between 10p/uL and 100 p/uL 
-##                               20                               21 
+##                               18                               20 
 ##     Between 100p/uL and 1000p/ul Between 1,000p/ul and 10,000p/ul 
 ##                               32                               38 
 ##                Above 10,000 p/ul 
@@ -1213,18 +1214,18 @@ print(results)</code></pre>
 <pre><code>## # A tibble: 6 × 3
 ##   qpcr_cat1                        Sensitivity Specificity
 ##   &lt;fct&gt;                                  &lt;dbl&gt;       &lt;dbl&gt;
-## 1 Less than or equal to 1 p/ul         NaN           0.519
-## 2 Between 1p/uL and 10 p/uL              0.7       NaN    
-## 3 Between 10p/uL and 100 p/uL            0.905     NaN    
+## 1 Less than or equal to 1 p/ul         NaN           0.467
+## 2 Between 1p/uL and 10 p/uL              0.778     NaN    
+## 3 Between 10p/uL and 100 p/uL            0.9       NaN    
 ## 4 Between 100p/uL and 1000p/ul           0.906     NaN    
 ## 5 Between 1,000p/ul and 10,000p/ul       1         NaN    
 ## 6 Above 10,000 p/ul                      0.913     NaN</code></pre>
 <pre class="r"><code>table(parasitemia_pos$qpcr_cat1)</code></pre>
 <pre><code>## 
 ##                         Negative     Less than or equal to 1 p/ul 
-##                                0                               77 
+##                                0                               15 
 ##        Between 1p/uL and 10 p/uL      Between 10p/uL and 100 p/uL 
-##                               20                               21 
+##                               18                               20 
 ##     Between 100p/uL and 1000p/ul Between 1,000p/ul and 10,000p/ul 
 ##                               32                               38 
 ##                Above 10,000 p/ul 
@@ -1265,7 +1266,7 @@ Prev # 31%</code></pre>
 ##        &#39;Positive&#39; Class : 1              
 ## </code></pre>
 <pre class="r"><code>Sys.time()</code></pre>
-<pre><code>## [1] &quot;2024-04-03 16:47:40 EAT&quot;</code></pre>
+<pre><code>## [1] &quot;2024-04-24 17:39:13 CAT&quot;</code></pre>
 <pre class="r"><code># sessionInfo()
 devtools::session_info()</code></pre>
 <pre><code>## ─ Session info ───────────────────────────────────────────────────────────────
@@ -1277,8 +1278,8 @@ devtools::session_info()</code></pre>
 ##  language (EN)
 ##  collate  en_US.UTF-8
 ##  ctype    en_US.UTF-8
-##  tz       Africa/Kampala
-##  date     2024-04-03
+##  tz       Africa/Kigali
+##  date     2024-04-24
 ##  pandoc   3.1.1 @ /Applications/RStudio.app/Contents/Resources/app/quarto/bin/tools/ (via rmarkdown)
 ## 
 ## ─ Packages ───────────────────────────────────────────────────────────────────
