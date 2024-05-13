@@ -218,12 +218,12 @@ Proportion_region_12_24 <-Characteristics_discordant_12_24_merged %>%
 #write_csv(Proportion_region_12_24, "../../data_out/Regions_for_discordant_samples.csv")
 
 # How many had detectable fever?
-Fever_status_12_24 <- Characteristics_discordant_12_24_merged%>%
+Fever_status_discordant_12_24 <- Characteristics_discordant_12_24_merged%>%
   filter(temperature >= 37.5)
 
-unique(nrow(Fever_status_12_24)) # 
+unique(nrow(Fever_status_discordant_12_24)) # 
 
-proportion_fever <- unique(nrow(Fever_status_12_24))/nrow(Characteristics_discordant_12_24_merged) *100
+proportion_fever <- unique(nrow(Fever_status_discordant_12_24))/nrow(Characteristics_discordant_12_24_merged) *100
 
 round(proportion_fever) # 
  
@@ -241,25 +241,23 @@ Summary_parasite_density <- Characteristics_discordant_12_24_merged %>%
 
 Summary_table <- data.frame( 
 N = nrow(Characteristics_discordant_12_24_merged),
-Age_less_5 = Proportion_age_categories_2[3,2],
-Prop_less_5 = Proportion_age_categories_2[3,3],
-Age_5_to_less_10 = Proportion_age_categories_2[2,2],
-Prop_5_to_less_10 = Proportion_age_categories_2[2,3],
-Age_10_to_less_15 = Proportion_age_categories_2[1,2],
-Prop_10_to_less_15 = Proportion_age_categories_2[1,3],
-Age_greater_15 = Proportion_age_categories_2[4,2],
-Prop_greater_15 = Proportion_age_categories_2[4,3],
+Age_less_5 = Proportion_age_categories[1,2],
+Prop_less_5 = Proportion_age_categories[1,3],
+Age_5_to_15 = Proportion_age_categories[2,2],
+Prop_5_to_15 = Proportion_age_categories[2,3],
+Age_16_or_more = Proportion_age_categories[3,2],
+Prop_age_16_or_more = Proportion_age_categories[3,3],
 Median_age = Summary_age_discordant[1,1],
 IQR_age= Summary_age_discordant[1,2],
 Male = Proportion_gender_12_24[1,2],
 Prop_male = Proportion_gender_12_24[1,3],
-Fever = nrow(Fever_status_12_24),
+Fever = nrow(Fever_status_discordant_12_24),
 Prop_fever = round(proportion_fever),
 Parasitemia_less_1000 =  Summary_parasite_density[1,2],
 Prop_parasitemia_less_1000 = Summary_parasite_density[1,3],
 Median_parasite_density = median(Characteristics_discordant_12_24_merged$parasitedensity),
 IQR_parasite_density= IQR(Characteristics_discordant_12_24_merged$parasitedensity),
-row.names = "LN12 and 24"
+row.names = "Discordant"
   )
 
 #names(Summary_table) <- c("N","Age ≤  5", "Prop ≤  5yrs", "Age > 5","Prop >5", "Median_age", "IQR_age", "Gender (M)", "Proportion Gender", "Fever", "Proportion Fever", "Parasitemia ≤ 100", "Proportion Parasitemia ≤  100", "Median_parasite_density", "IQR_parasite_density" )
@@ -409,16 +407,14 @@ Summary_parasite_density_concordant <- Characteristics_concordant_12_24 %>%
   count(Parasitemia_threshold) %>% 
   mutate(Proportion = round(n/sum(n)*100))
 
-Summary_table <- data.frame( 
+Summary_table_2 <- data.frame( 
 N = nrow(Characteristics_concordant_12_24),
-Age_less_5 = Proportion_age_categories_concordant_2[3,2],
-Prop_less_5 = Proportion_age_categories_concordant_2[3,3],
-Age_5_to_less_10 = Proportion_age_categories_concordant_2[2,2],
-Prop_5_to_less_10 = Proportion_age_categories_concordant_2[2,3],
-Age_10_to_less_15 = Proportion_age_categories_concordant_2[1,2],
-Prop_10_to_less_15 = Proportion_age_categories_concordant_2[1,3],
-Age_greater_15 = Proportion_age_categories_concordant_2[4,2],
-Prop_greater_15 = Proportion_age_categories_concordant_2[4,3],
+Age_less_5 = Proportion_age_categories_concordant[1,2],
+Prop_less_5 = Proportion_age_categories_concordant[1,3],
+Age_5_to_15 = Proportion_age_categories_concordant[2,2],
+Prop_5_to_15 = Proportion_age_categories_concordant[2,3],
+Age_16_or_more = Proportion_age_categories_concordant_2[3,2],
+Prop_age_16_or_more = Proportion_age_categories_concordant_2[3,3],
 Median_age = median(Characteristics_concordant_12_24$ageyrs),
 IQR_age= IQR(Characteristics_concordant_12_24$ageyrs),
 Male = Proportion_gender_concordant_12_24[1,2],
@@ -429,9 +425,8 @@ Parasitemia_less_1000 =  Summary_parasite_density_concordant[1,2],
 Prop_parasitemia_less_1000 = Summary_parasite_density_concordant[1,3],
 Median_parasite_density = median(Characteristics_concordant_12_24$parasitedensity),
 IQR_parasite_density= IQR(Characteristics_concordant_12_24$parasitedensity),
-row.names = "LN12 and 24"
+row.names = "Concordant"
   )
-
 ```
 
 
@@ -448,6 +443,37 @@ paste0(" Proportion of RDT negative and BS positive samples in both LLINEUP12 an
 
 ```
 
+### Calculating z statistics to compare observed proportions between groups
+```{r}
+Bound_tables <- rbind(Summary_table, Summary_table_2)
+
+Transposed <- t(Bound_tables)
+
+Transposed_2 <- as.data.frame(Transposed)
+
+Transposed_2$category <-row.names(Transposed_2)
+
+Transposed_2_filtered <- Transposed_2[!grepl(pattern ="*Prop*", Transposed_2$category), ]
+
+Transposed_2_filtered <- Transposed_2_filtered %>% 
+  transmute(category, Concordant, Discordant)
+
+
+z_test_stats_fever <- prop.test(x= c( nrow(Fever_status_concordant_12_24), nrow(Fever_status_discordant_12_24)), n =c(nrow(Characteristics_concordant_12_24), nrow(Characteristics_discordant_12_24)))
+
+z_test_stats_fever
+
+# Is the observed proportion of those with fever among concordant samples greater than that in the discordant group?
+z_test_stats_fever_greater <- prop.test(x= c( nrow(Fever_status_concordant_12_24), nrow(Fever_status_discordant_12_24)), n =c(nrow(Characteristics_concordant_12_24), nrow(Characteristics_discordant_12_24)), alternative = "greater")
+
+z_test_stats_fever_greater
+```
+
+
+### Performing the Mann-Whitney U/wilcoxon ranksum test to get stats on median parasite densities between concordant and discordant samples
+```{r}
+wilcox.test(Characteristics_concordant_12_24$parasitedensity, Characteristics_discordant_12_24_merged$parasitedensity, alternative = "greater", conf.int = TRUE)
+```
 
 
 ```{r print_date_and_time}
