@@ -443,36 +443,38 @@ paste0(" Proportion of RDT negative and BS positive samples in both LLINEUP12 an
 
 ```
 
-### Calculating z statistics to compare observed proportions between groups
+### Calculating Chi-squared test to compare observed proportions of fever between groups
 ```{r}
-Bound_tables <- rbind(Summary_table, Summary_table_2)
 
-Transposed <- t(Bound_tables)
+# Create a contingency table
 
-Transposed_2 <- as.data.frame(Transposed)
+n_discordant <- nrow(Characteristics_discordant_12_24_merged)
+n_fever_discordant <-nrow(Fever_status_discordant_12_24)
 
-Transposed_2$category <-row.names(Transposed_2)
+n_concordant <-nrow(Characteristics_concordant_12_24)
+n_fever_concordant <- nrow(Fever_status_concordant_12_24)
 
-Transposed_2_filtered <- Transposed_2[!grepl(pattern ="*Prop*", Transposed_2$category), ]
+discordant <- c(n_fever_discordant, n_discordant - n_fever_discordant)
 
-Transposed_2_filtered <- Transposed_2_filtered %>% 
-  transmute(category, Concordant, Discordant)
+concordant <- c(n_fever_concordant, n_concordant - n_fever_concordant)
+fever_data <- rbind(discordant, concordant)
+colnames(fever_data) <- c("Fever", "No Fever")
+rownames(fever_data) <- c("Discordant", "Concordant")
 
+# Perform chi-square test
+chi_sq_test <- chisq.test(fever_data)
 
-z_test_stats_fever <- prop.test(x= c( nrow(Fever_status_concordant_12_24), nrow(Fever_status_discordant_12_24)), n =c(nrow(Characteristics_concordant_12_24), nrow(Characteristics_discordant_12_24)))
-
-z_test_stats_fever
-
-# Is the observed proportion of those with fever among concordant samples greater than that in the discordant group?
-z_test_stats_fever_greater <- prop.test(x= c( nrow(Fever_status_concordant_12_24), nrow(Fever_status_discordant_12_24)), n =c(nrow(Characteristics_concordant_12_24), nrow(Characteristics_discordant_12_24)), alternative = "greater")
-
-z_test_stats_fever_greater
+# Print the results
+print(chi_sq_test)
 ```
 
 
-### Performing the Mann-Whitney U/wilcoxon ranksum test to get stats on median parasite densities between concordant and discordant samples
 ```{r}
-wilcox.test(Characteristics_concordant_12_24$parasitedensity, Characteristics_discordant_12_24_merged$parasitedensity, alternative = "greater", conf.int = TRUE)
+### Performing the Mann-Whitney U/wilcoxon ranksum test to get stats on median parasite densities between concordant and discordant samples
+
+wilcox.test(Characteristics_concordant_12_24$parasitedensity, Characteristics_discordant_12_24_merged$parasitedensity, alternative = "two.sided", conf.int = TRUE)
+
+
 ```
 
 
