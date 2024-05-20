@@ -380,11 +380,9 @@ characteristics of concordant samples</a></li>
 <li><a href="#proportion-of-discordant-samples-out-of-the-total-of-the-bs-positive-samples-from-both-llineupe12-and-llineupe-24-studies" id="toc-proportion-of-discordant-samples-out-of-the-total-of-the-bs-positive-samples-from-both-llineupe12-and-llineupe-24-studies">Proportion
 of discordant samples out of the total of the BS positive samples from
 both LLINEUPE12 and LLINEUPE 24 studies</a></li>
-<li><a href="#calculating-z-statistics-to-compare-observed-proportions-between-groups" id="toc-calculating-z-statistics-to-compare-observed-proportions-between-groups">Calculating
-z statistics to compare observed proportions between groups</a></li>
-<li><a href="#performing-the-mann-whitney-uwilcoxon-ranksum-test-to-get-stats-on-median-parasite-densities-between-concordant-and-discordant-samples" id="toc-performing-the-mann-whitney-uwilcoxon-ranksum-test-to-get-stats-on-median-parasite-densities-between-concordant-and-discordant-samples">Performing
-the Mann-Whitney U/wilcoxon ranksum test to get stats on median parasite
-densities between concordant and discordant samples</a></li>
+<li><a href="#calculating-chi-squared-test-to-compare-observed-proportions-of-fever-between-groups" id="toc-calculating-chi-squared-test-to-compare-observed-proportions-of-fever-between-groups">Calculating
+Chi-squared test to compare observed proportions of fever between
+groups</a></li>
 </ul></li>
 </ul>
 </div>
@@ -879,70 +877,50 @@ Prop_discordant_overall &lt;- round((nrow(RDT_Neg_and_BS_pos_12)+ nrow(RDT_Neg_a
 paste0(&quot; Proportion of RDT negative and BS positive samples in both LLINEUP12 and LLINEUP24 samples: &quot;, Prop_discordant_overall)</code></pre>
 <pre><code>## [1] &quot; Proportion of RDT negative and BS positive samples in both LLINEUP12 and LLINEUP24 samples: 6.2&quot;</code></pre>
 </div>
-<div id="calculating-z-statistics-to-compare-observed-proportions-between-groups" class="section level3">
-<h3>Calculating z statistics to compare observed proportions between
-groups</h3>
-<pre class="r"><code>Bound_tables &lt;- rbind(Summary_table, Summary_table_2)
+<div id="calculating-chi-squared-test-to-compare-observed-proportions-of-fever-between-groups" class="section level3">
+<h3>Calculating Chi-squared test to compare observed proportions of
+fever between groups</h3>
+<pre class="r"><code># Create a contingency table
 
-Transposed &lt;- t(Bound_tables)
+n_discordant &lt;- nrow(Characteristics_discordant_12_24_merged)
+n_fever_discordant &lt;-nrow(Fever_status_discordant_12_24)
 
-Transposed_2 &lt;- as.data.frame(Transposed)
+n_concordant &lt;-nrow(Characteristics_concordant_12_24)
+n_fever_concordant &lt;- nrow(Fever_status_concordant_12_24)
 
-Transposed_2$category &lt;-row.names(Transposed_2)
+discordant &lt;- c(n_fever_discordant, n_discordant - n_fever_discordant)
 
-Transposed_2_filtered &lt;- Transposed_2[!grepl(pattern =&quot;*Prop*&quot;, Transposed_2$category), ]
+concordant &lt;- c(n_fever_concordant, n_concordant - n_fever_concordant)
+fever_data &lt;- rbind(discordant, concordant)
+colnames(fever_data) &lt;- c(&quot;Fever&quot;, &quot;No Fever&quot;)
+rownames(fever_data) &lt;- c(&quot;Discordant&quot;, &quot;Concordant&quot;)
 
-Transposed_2_filtered &lt;- Transposed_2_filtered %&gt;% 
-  transmute(category, Concordant, Discordant)
+# Perform chi-square test
+chi_sq_test &lt;- chisq.test(fever_data)
 
-
-z_test_stats_fever &lt;- prop.test(x= c( nrow(Fever_status_concordant_12_24), nrow(Fever_status_discordant_12_24)), n =c(nrow(Characteristics_concordant_12_24), nrow(Characteristics_discordant_12_24)))
-
-z_test_stats_fever</code></pre>
+# Print the results
+print(chi_sq_test)</code></pre>
 <pre><code>## 
-##  2-sample test for equality of proportions with continuity correction
+##  Pearson&#39;s Chi-squared test with Yates&#39; continuity correction
 ## 
-## data:  c(nrow(Fever_status_concordant_12_24), nrow(Fever_status_discordant_12_24)) out of c(nrow(Characteristics_concordant_12_24), nrow(Characteristics_discordant_12_24))
-## X-squared = 25.481, df = 1, p-value = 4.468e-07
-## alternative hypothesis: two.sided
-## 95 percent confidence interval:
-##  0.1342803 0.2716684
-## sample estimates:
-##    prop 1    prop 2 
-## 0.4077936 0.2048193</code></pre>
-<pre class="r"><code># Is the observed proportion of those with fever among concordant samples greater than that in the discordant group?
-z_test_stats_fever_greater &lt;- prop.test(x= c( nrow(Fever_status_concordant_12_24), nrow(Fever_status_discordant_12_24)), n =c(nrow(Characteristics_concordant_12_24), nrow(Characteristics_discordant_12_24)), alternative = &quot;greater&quot;)
+## data:  fever_data
+## X-squared = 25.481, df = 1, p-value = 4.468e-07</code></pre>
+<pre class="r"><code>### Performing the Mann-Whitney U/wilcoxon ranksum test to get stats on median parasite densities between concordant and discordant samples
 
-z_test_stats_fever_greater</code></pre>
-<pre><code>## 
-##  2-sample test for equality of proportions with continuity correction
-## 
-## data:  c(nrow(Fever_status_concordant_12_24), nrow(Fever_status_discordant_12_24)) out of c(nrow(Characteristics_concordant_12_24), nrow(Characteristics_discordant_12_24))
-## X-squared = 25.481, df = 1, p-value = 2.234e-07
-## alternative hypothesis: greater
-## 95 percent confidence interval:
-##  0.1447961 1.0000000
-## sample estimates:
-##    prop 1    prop 2 
-## 0.4077936 0.2048193</code></pre>
-</div>
-<div id="performing-the-mann-whitney-uwilcoxon-ranksum-test-to-get-stats-on-median-parasite-densities-between-concordant-and-discordant-samples" class="section level3">
-<h3>Performing the Mann-Whitney U/wilcoxon ranksum test to get stats on
-median parasite densities between concordant and discordant samples</h3>
-<pre class="r"><code>wilcox.test(Characteristics_concordant_12_24$parasitedensity, Characteristics_discordant_12_24_merged$parasitedensity, alternative = &quot;greater&quot;, conf.int = TRUE)</code></pre>
+wilcox.test(Characteristics_concordant_12_24$parasitedensity, Characteristics_discordant_12_24_merged$parasitedensity, alternative = &quot;two.sided&quot;, conf.int = TRUE)</code></pre>
 <pre><code>## 
 ##  Wilcoxon rank sum test with continuity correction
 ## 
 ## data:  Characteristics_concordant_12_24$parasitedensity and Characteristics_discordant_12_24_merged$parasitedensity
 ## W = 213556, p-value &lt; 2.2e-16
-## alternative hypothesis: true location shift is greater than 0
+## alternative hypothesis: true location shift is not equal to 0
 ## 95 percent confidence interval:
-##  1144  Inf
+##  1064 2624
 ## sample estimates:
 ## difference in location 
 ##                   1720</code></pre>
 <pre class="r"><code>Sys.time()</code></pre>
-<pre><code>## [1] &quot;2024-05-13 16:27:37 EAT&quot;</code></pre>
+<pre><code>## [1] &quot;2024-05-20 22:13:16 EAT&quot;</code></pre>
 <pre class="r"><code># sessionInfo()
 devtools::session_info()</code></pre>
 <pre><code>## ─ Session info ───────────────────────────────────────────────────────────────
@@ -954,8 +932,8 @@ devtools::session_info()</code></pre>
 ##  language (EN)
 ##  collate  en_US.UTF-8
 ##  ctype    en_US.UTF-8
-##  tz       Africa/Kampala
-##  date     2024-05-13
+##  tz       Africa/Nairobi
+##  date     2024-05-20
 ##  pandoc   3.1.1 @ /Applications/RStudio.app/Contents/Resources/app/quarto/bin/tools/ (via rmarkdown)
 ## 
 ## ─ Packages ───────────────────────────────────────────────────────────────────
