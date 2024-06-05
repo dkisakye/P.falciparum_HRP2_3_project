@@ -44,9 +44,24 @@ library(epiR)
                          # add.rownames = FALSE, nonint.factors = TRUE, select.rows = NULL,
                          # select.cols = NULL, strlexport = FALSE, strlpath = ".") %>%
 
-Household_data_12 <-read_dta("../../../LineUP2/Household member level data 12 month survey_FINAL.dta")
+Combined_lineup_data <- read_dta("../../../LineUP2/Combined 12m and 24m CS surveys for LLINEUP2_household member level data.dta")
+
+str(Combined_lineup_data$survey)
+
+survey_labels <- c("12 month survey", "24 month survey") 
+Combined_lineup_data$survey <- as.character(Combined_lineup_data$survey)
+
+Combined_lineup_data$survey <- ifelse(Combined_lineup_data$survey == "1", survey_labels[1], survey_labels[2])
+
+# Household_data_12 <-read_dta("../../../LineUP2/Household member level data 12 month survey_FINAL.dta")
  
-Household_data_24 <-read_dta("../../../LineUP2/Household member level data 24 month survey_FINAL.dta")
+# Household_data_24 <-read_dta("../../../LineUP2/Household member level data 24 month survey_FINAL.dta")
+
+Household_data_12 <- Combined_lineup_data %>% 
+  filter(survey == "12 month survey")
+
+Household_data_24 <- Combined_lineup_data %>% 
+  filter(survey == "24 month survey")
 
 # Take a look at a summary of the rdt and bs data
  table(Household_data_12$rdtdone) # rdt result not available/not done for some
@@ -60,11 +75,11 @@ Household_data_24 <-read_dta("../../../LineUP2/Household member level data 24 mo
 # First filter to keep only observations where rdt and bs were done
  Household_data_12_trim <-Household_data_12 %>% 
    filter(rdtdone == 1 & BSdone == 1) %>% 
-   select(rdtrslt, BSdich, fpbarcode1)
+   select(rdtrslt, BSdich)
  
  Household_data_24_trim <- Household_data_24 %>%
    filter(rdtdone == 1 & BSdone == 1) %>% 
-   select(rdtrslt, BSdich, fpbarcode1)
+   select(rdtrslt, BSdich)
  
  # Now bind the dataframes
  LLN12_24_data <-rbind(Household_data_12_trim, Household_data_24_trim)
@@ -97,7 +112,7 @@ colnames(matrix_1) <-c(1,0)
 
 matrix_1
 
-Tests_1 <- epi.tests(matrix_1, conf.level = 0.95)
+Tests_1 <- epi.tests(matrix_1, conf.level = 0.95, digits = 3)
 
 Tests_1
 
@@ -148,9 +163,10 @@ colnames(matrix_2) <-c(1,0)
 
 matrix_2
 
-Tests_2 <- epi.tests(matrix_2, conf.level = 0.95)
+Tests_2 <- epi.tests(matrix_2, conf.level = 0.95, digits = 3)
 
 Tests_2
+
 
 ```
 

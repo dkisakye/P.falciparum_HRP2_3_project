@@ -404,15 +404,34 @@ samples</h3>
                          # add.rownames = FALSE, nonint.factors = TRUE, select.rows = NULL,
                          # select.cols = NULL, strlexport = FALSE, strlpath = &quot;.&quot;) %&gt;%
 
-Household_data_12 &lt;-read_dta(&quot;../../../LineUP2/Household member level data 12 month survey_FINAL.dta&quot;)
+Combined_lineup_data &lt;- read_dta(&quot;../../../LineUP2/Combined 12m and 24m CS surveys for LLINEUP2_household member level data.dta&quot;)
+
+str(Combined_lineup_data$survey)</code></pre>
+<pre><code>##  dbl+lbl [1:32895] 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,...
+##  @ label       : chr &quot;Timing of CS survey&quot;
+##  @ format.stata: chr &quot;%15.0g&quot;
+##  @ labels      : Named num [1:2] 1 2
+##   ..- attr(*, &quot;names&quot;)= chr [1:2] &quot;12 month survey&quot; &quot;24 month survey&quot;</code></pre>
+<pre class="r"><code>survey_labels &lt;- c(&quot;12 month survey&quot;, &quot;24 month survey&quot;) 
+Combined_lineup_data$survey &lt;- as.character(Combined_lineup_data$survey)
+
+Combined_lineup_data$survey &lt;- ifelse(Combined_lineup_data$survey == &quot;1&quot;, survey_labels[1], survey_labels[2])
+
+# Household_data_12 &lt;-read_dta(&quot;../../../LineUP2/Household member level data 12 month survey_FINAL.dta&quot;)
  
-Household_data_24 &lt;-read_dta(&quot;../../../LineUP2/Household member level data 24 month survey_FINAL.dta&quot;)
+# Household_data_24 &lt;-read_dta(&quot;../../../LineUP2/Household member level data 24 month survey_FINAL.dta&quot;)
+
+Household_data_12 &lt;- Combined_lineup_data %&gt;% 
+  filter(survey == &quot;12 month survey&quot;)
+
+Household_data_24 &lt;- Combined_lineup_data %&gt;% 
+  filter(survey == &quot;24 month survey&quot;)
 
 # Take a look at a summary of the rdt and bs data
  table(Household_data_12$rdtdone) # rdt result not available/not done for some</code></pre>
 <pre><code>## 
 ##   -9    0    1 
-## 3948 2405 3886</code></pre>
+## 3947 2405 3887</code></pre>
 <pre class="r"><code> table(Household_data_12$BSdone)</code></pre>
 <pre><code>## 
 ##    1 
@@ -428,11 +447,11 @@ Household_data_24 &lt;-read_dta(&quot;../../../LineUP2/Household member level da
 <pre class="r"><code># First filter to keep only observations where rdt and bs were done
  Household_data_12_trim &lt;-Household_data_12 %&gt;% 
    filter(rdtdone == 1 &amp; BSdone == 1) %&gt;% 
-   select(rdtrslt, BSdich, fpbarcode1)
+   select(rdtrslt, BSdich)
  
  Household_data_24_trim &lt;- Household_data_24 %&gt;%
    filter(rdtdone == 1 &amp; BSdone == 1) %&gt;% 
-   select(rdtrslt, BSdich, fpbarcode1)
+   select(rdtrslt, BSdich)
  
  # Now bind the dataframes
  LLN12_24_data &lt;-rbind(Household_data_12_trim, Household_data_24_trim)
@@ -461,37 +480,37 @@ matrix_1 &lt;- as.table(matrix(input_values_1, nrow = 2, byrow = TRUE ))
 matrix_1</code></pre>
 <pre><code>##      A    B
 ## A 1822 1889
-## B  166 2476</code></pre>
+## B  166 2477</code></pre>
 <pre class="r"><code>rownames(matrix_1) &lt;- c(1,0)
 colnames(matrix_1) &lt;-c(1,0)
 
 matrix_1</code></pre>
 <pre><code>##      1    0
 ## 1 1822 1889
-## 0  166 2476</code></pre>
-<pre class="r"><code>Tests_1 &lt;- epi.tests(matrix_1, conf.level = 0.95)
+## 0  166 2477</code></pre>
+<pre class="r"><code>Tests_1 &lt;- epi.tests(matrix_1, conf.level = 0.95, digits = 3)
 
 Tests_1</code></pre>
 <pre><code>##           Outcome +    Outcome -      Total
 ## Test +         1822         1889       3711
-## Test -          166         2476       2642
-## Total          1988         4365       6353
+## Test -          166         2477       2643
+## Total          1988         4366       6354
 ## 
 ## Point estimates and 95% CIs:
 ## --------------------------------------------------------------
-## Apparent prevalence *                  0.58 (0.57, 0.60)
-## True prevalence *                      0.31 (0.30, 0.32)
-## Sensitivity *                          0.92 (0.90, 0.93)
-## Specificity *                          0.57 (0.55, 0.58)
-## Positive predictive value *            0.49 (0.47, 0.51)
-## Negative predictive value *            0.94 (0.93, 0.95)
-## Positive likelihood ratio              2.12 (2.04, 2.20)
-## Negative likelihood ratio              0.15 (0.13, 0.17)
-## False T+ proportion for true D- *      0.43 (0.42, 0.45)
-## False T- proportion for true D+ *      0.08 (0.07, 0.10)
-## False T+ proportion for T+ *           0.51 (0.49, 0.53)
-## False T- proportion for T- *           0.06 (0.05, 0.07)
-## Correctly classified proportion *      0.68 (0.66, 0.69)
+## Apparent prevalence *                  0.584 (0.572, 0.596)
+## True prevalence *                      0.313 (0.301, 0.324)
+## Sensitivity *                          0.916 (0.903, 0.928)
+## Specificity *                          0.567 (0.552, 0.582)
+## Positive predictive value *            0.491 (0.475, 0.507)
+## Negative predictive value *            0.937 (0.927, 0.946)
+## Positive likelihood ratio              2.118 (2.042, 2.197)
+## Negative likelihood ratio              0.147 (0.127, 0.171)
+## False T+ proportion for true D- *      0.433 (0.418, 0.448)
+## False T- proportion for true D+ *      0.084 (0.072, 0.097)
+## False T+ proportion for T+ *           0.509 (0.493, 0.525)
+## False T- proportion for T- *           0.063 (0.054, 0.073)
+## Correctly classified proportion *      0.677 (0.665, 0.688)
 ## --------------------------------------------------------------
 ## * Exact CIs</code></pre>
 </div>
@@ -556,7 +575,7 @@ matrix_2</code></pre>
 <pre><code>##     1   0
 ## 1 120  68
 ## 0  11 121</code></pre>
-<pre class="r"><code>Tests_2 &lt;- epi.tests(matrix_2, conf.level = 0.95)
+<pre class="r"><code>Tests_2 &lt;- epi.tests(matrix_2, conf.level = 0.95, digits = 3)
 
 Tests_2</code></pre>
 <pre><code>##           Outcome +    Outcome -      Total
@@ -566,19 +585,19 @@ Tests_2</code></pre>
 ## 
 ## Point estimates and 95% CIs:
 ## --------------------------------------------------------------
-## Apparent prevalence *                  0.59 (0.53, 0.64)
-## True prevalence *                      0.41 (0.35, 0.47)
-## Sensitivity *                          0.92 (0.85, 0.96)
-## Specificity *                          0.64 (0.57, 0.71)
-## Positive predictive value *            0.64 (0.57, 0.71)
-## Negative predictive value *            0.92 (0.86, 0.96)
-## Positive likelihood ratio              2.55 (2.09, 3.10)
-## Negative likelihood ratio              0.13 (0.07, 0.23)
-## False T+ proportion for true D- *      0.36 (0.29, 0.43)
-## False T- proportion for true D+ *      0.08 (0.04, 0.15)
-## False T+ proportion for T+ *           0.36 (0.29, 0.43)
-## False T- proportion for T- *           0.08 (0.04, 0.14)
-## Correctly classified proportion *      0.75 (0.70, 0.80)
+## Apparent prevalence *                  0.588 (0.531, 0.642)
+## True prevalence *                      0.409 (0.355, 0.465)
+## Sensitivity *                          0.916 (0.855, 0.957)
+## Specificity *                          0.640 (0.567, 0.709)
+## Positive predictive value *            0.638 (0.565, 0.707)
+## Negative predictive value *            0.917 (0.856, 0.958)
+## Positive likelihood ratio              2.546 (2.091, 3.101)
+## Negative likelihood ratio              0.131 (0.074, 0.233)
+## False T+ proportion for true D- *      0.360 (0.291, 0.433)
+## False T- proportion for true D+ *      0.084 (0.043, 0.145)
+## False T+ proportion for T+ *           0.362 (0.293, 0.435)
+## False T- proportion for T- *           0.083 (0.042, 0.144)
+## Correctly classified proportion *      0.753 (0.702, 0.799)
 ## --------------------------------------------------------------
 ## * Exact CIs</code></pre>
 </div>
@@ -631,7 +650,7 @@ Tests_3</code></pre>
 ## --------------------------------------------------------------
 ## * Exact CIs</code></pre>
 <pre class="r"><code>Sys.time()</code></pre>
-<pre><code>## [1] &quot;2024-04-24 17:42:10 CAT&quot;</code></pre>
+<pre><code>## [1] &quot;2024-06-05 18:11:15 EAT&quot;</code></pre>
 <pre class="r"><code># sessionInfo()
 devtools::session_info()</code></pre>
 <pre><code>## ─ Session info ───────────────────────────────────────────────────────────────
@@ -643,8 +662,8 @@ devtools::session_info()</code></pre>
 ##  language (EN)
 ##  collate  en_US.UTF-8
 ##  ctype    en_US.UTF-8
-##  tz       Africa/Kigali
-##  date     2024-04-24
+##  tz       Africa/Kampala
+##  date     2024-06-05
 ##  pandoc   3.1.1 @ /Applications/RStudio.app/Contents/Resources/app/quarto/bin/tools/ (via rmarkdown)
 ## 
 ## ─ Packages ───────────────────────────────────────────────────────────────────
