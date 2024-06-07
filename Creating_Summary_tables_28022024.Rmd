@@ -1,0 +1,510 @@
+---
+title: "Line_Up2_discordant_samples"
+author: "dkisakye"
+date: "2023-05-24"
+output:
+  html_document:
+    toc: yes
+  toc: default
+---
+
+## Objective
+Create summary tables for manuscript
+
+```{r cleanup, warning=FALSE, error=FALSE, message=FALSE}
+# Clean environment
+rm(list=ls(all=TRUE))
+
+# Unload packages
+if (!is.null(names(utils::sessionInfo()[["otherPkgs"]]))) pacman::p_unload("all")
+```
+
+
+```{r packages, warning=FALSE, error=FALSE, message=FALSE}
+library(haven)
+library(dplyr) 
+library(tidyverse)
+library(readxl)
+library(writexl)
+library(reshape2)
+library(readr)
+library(readstata13)
+```
+
+## Extract the samples from the 12-Month survey data
+```{r }
+
+Household_data_12 <- read.dta13("../../../LineUP2/Household member level data 12 month survey_FINAL.dta", convert.factors = TRUE, generate.factors = TRUE,
+                         encoding = "UTF-8", fromEncoding = NULL, convert.underscore = FALSE,
+                         missing.type = TRUE, convert.dates = TRUE, replace.strl = TRUE,
+                         add.rownames = FALSE, nonint.factors = TRUE, select.rows = NULL,
+                         select.cols = NULL, strlexport = FALSE, strlpath = ".") %>%
+  filter(!is.na(uniqueid))
+  
+ names(Household_data_12) 
+ 
+
+ # Number of participants enrolled
+unique_ids<- Household_data_12 %>% 
+  summarise(n_distinct_ids = n_distinct(uniqueid))
+
+# No of ids with positive Bs
+BS_pos <- Household_data_12 %>% 
+  filter(BSdich == "Positive") 
+
+pos_bs <-unique(nrow(BS_pos))
+
+paste0("No of ids with positive Bs in LLN12:", pos_bs)
+
+
+
+```
+
+### Now find the discordant samples ie BS positive and RDT negative
+```{r }
+RDT_Neg_and_BS_pos_12 <- Household_data_12 %>%
+                    select(rdtrslt, BSdich, parasitedensity, fpbarcode1)  %>%
+                filter(rdtrslt == 0 & BSdich == 1)
+
+# number of discordant
+no_discordant_LLN12 <-unique(nrow(RDT_Neg_and_BS_pos_12)) 
+
+paste0("No of discordant samples in LLN12:", no_discordant_LLN12)
+
+
+# Proportion of discordant samples
+proportion_discordant_12 <- nrow(RDT_Neg_and_BS_pos_12)/nrow(Household_data_12) *100
+ 
+print(proportion_discordant_12)
+
+```
+
+
+
+## Extract BS positive samples from LLN24
+```{r}
+Household_data_24 <- read_dta("../../../LineUP2/Household member level data 24 month survey_FINAL.dta")%>%
+  filter(!is.na(uniqueid))
+ # Number of participants enrolled
+ 
+Household_data_24 %>% 
+  summarise(n_distinct_ids = n_distinct(uniqueid))
+
+# No of ids with positive Bs
+BS_pos_24 <- Household_data_24 %>% 
+  filter(BSdich == 1) 
+
+pos_bs_24 <-unique(nrow(BS_pos_24))
+
+paste0("No of ids with positive Bs in LLN24:", pos_bs_24)
+```
+
+## Extract the discordant (RDT negative & Microscopy positive) samples from the 24-Month survey data
+```{r}
+RDT_Neg_and_BS_pos_24 <- Household_data_24 %>%
+                    select(rdtrslt, BSdich, parasitedensity, fpbarcode1)  %>%
+                filter(rdtrslt == 0 & BSdich == 1)
+
+
+#number of discordant 
+no_discordant_LLN24 <-unique(nrow(RDT_Neg_and_BS_pos_24))
+
+paste0("No of discordant samples in LLN24:", no_discordant_LLN24)
+
+#Proportion of discordant samples
+proportion_discordant_24 <- nrow(RDT_Neg_and_BS_pos_24)/nrow(Household_data_24)
+
+print(proportion_discordant_24) 
+
+
+#save the dataset
+
+# write_csv(RDT_Neg_and_BS_pos_24, "../../Results/Filtered_RDT_Neg_and_BS_pos_24.csv")
+
+
+```
+##Summarising characteristics of the LLN12 and LLN24 discordant samples
+```{r}
+Characteristics_discordant_12 <- Household_data_12 %>%
+  filter(rdtrslt == 0 & BSdich == 1) %>% 
+  select(fpbarcode1, rdtrslt, BSdich, gender, ageyrs, gender, temperature, mrccode, Region)
+
+Characteristics_discordant_24 <- Household_data_24 %>%
+  filter(rdtrslt == 0 & BSdich == 1)  %>% 
+  select(fpbarcode1, rdtrslt, BSdich, gender, ageyrs, gender, temperature, mrccode, Region)
+
+Characteristics_discordant_12_24 <- rbind(Characteristics_discordant_12, Characteristics_discordant_24)
+
+# Import qpcr and merge in Qpcr data
+
+var_ATS_data <-read_csv("../../data_out/166_RDT_neg_BS_pos_with_varATSqpcr_data.csv")
+
+Characteristics_discordant_12_24 <- Characteristics_discordant_12_24 %>% 
+  left_join(var_ATS_data, join_by(fpbarcode1, rdtrslt, BSdich))
+
+# Age
+Summary_age_discordant <- Characteristics_discordant_12_24 %>% 
+   summarise(med_age = median(ageyrs),
+             iqr_age = IQR(ageyrs))
+
+# Breakdown age
+less_or_equal_to_5 <- subset(Characteristics_discordant_12_24, ageyrs <= 5)
+greater_than_5 <-subset(Characteristics_discordant_12_24, ageyrs > 5)
+
+quantile(Characteristics_discordant_12_24$ageyrs, probs =seq(from = 0.25 ,to =0.75, by = 0.25))
+
+# Gender of participants: 1 is male . 2 is female
+Proportion_gender_12_24 <-Characteristics_discordant_12_24 %>% 
+  count(gender) %>% 
+  mutate(proportion = round(n/sum(n)*100))
+
+# How many had detectable fever?
+Fever_status_12_24 <- Characteristics_discordant_12_24%>%
+  filter(temperature >= 37.5)
+
+unique(nrow(Fever_status_12_24)) # 
+
+proportion_fever <- unique(nrow(Fever_status_12_24))/nrow(Characteristics_discordant_12_24) *100
+
+round(proportion_fever) # 
+
+Summary_parasite_density <- Characteristics_discordant_12_24 %>% 
+  mutate(Parasitemia_threshold = ifelse(Quantity <= 100, 0, 1)) %>%
+  count(Parasitemia_threshold) %>% 
+  mutate(Proportion = round(n/sum(n)*100))
+
+Summary_table <- data.frame( 
+N = nrow(Characteristics_discordant_12_24),
+Age_less_5 = nrow(less_or_equal_to_5),
+Prop_less_5 = round(nrow(less_or_equal_to_5)/nrow(Characteristics_discordant_12_24)*100),
+Age_greater_5 = nrow(greater_than_5),
+Prop_greater_5 = round(nrow(greater_than_5)/nrow(Characteristics_discordant_12_24)*100),
+Median_age = Summary_age_discordant[1,1],
+IQR_age= Summary_age_discordant[1,2],
+Male = Proportion_gender_12_24[1,2],
+Prop_male = Proportion_gender_12_24[1,3],
+Fever = nrow(Fever_status_12_24),
+Prop_fever = round(proportion_fever),
+Parasitemia_less_or_equal_100 =  Summary_parasite_density[1,2],
+Prop_parasitemia_less_or_equal_100 = Summary_parasite_density[1,3],
+Median_parasite_density = median(Characteristics_discordant_12_24$Quantity),
+IQR_parasite_density= IQR(Characteristics_discordant_12_24$Quantity),
+row.names = "LN12 and 24"
+  )
+
+names(Summary_table) <- c("N","Age ≤  5", "Prop ≤  5yrs", "Age > 5","Prop >5", "Median_age", "IQR_age", "Gender (M)", "Proportion Gender", "Fever", "Proportion Fever", "Parasitemia ≤ 100", "Proportion Parasitemia ≤  100", "Median_parasite_density", "IQR_parasite_density" )
+
+
+# save
+
+  # write_csv(Summary_table, "../../data_out/Table_characteristics_LLNEUP_166_discordant_samples_04032024.csv")
+```
+
+
+
+## Obtain number of samples from both LLN12 and LLN24 survey which had both RDT and BS done
+```{r}
+
+filter_12 <- Household_data_12 %>% 
+ filter(rdtdone & BSdone)
+
+print(nrow(filter_12)) # 4836 Rdt and BS done
+
+filter_24 <- Household_data_24 %>% 
+  filter(rdtdone & BSdone )
+
+print(nrow(filter_24))
+
+RDT_and_bs_done_12_24 <-nrow(filter_12) +nrow(filter_24)
+
+paste0("RDT and BS was performed on ", RDT_and_bs_done_12_24, " samples from LLN12 and LLN24 studies")
+```
+
+
+## Total no. of BS pos  from LLN12 and LLN24
+## Total no. of RDT pos from LLN12 and LLN24
+```{r}
+Total_BS_pos <-pos_bs_24 + pos_bs
+
+paste0("Total no of BS positive samples in LLN12 and LLN24 study:", Total_BS_pos)
+
+
+RDT_pos_12 <- filter(Household_data_12, rdtrslt == 1 ) 
+
+
+RDT_pos_24 <- filter(Household_data_24, rdtrslt == 1 )
+
+Total_RDT_pos <- nrow(RDT_pos_12)  + nrow(RDT_pos_24)
+
+## Totals and proportions
+paste0("Total no of RDT positive samples in LLN12 and LLN24 study = ", Total_RDT_pos, " and ", round(Total_RDT_pos/RDT_and_bs_done_12_24* 100, 1), "% of the samples")
+
+
+paste0("Total no of BS positive samples in LLN12 and LLN24 study = ", Total_BS_pos, " and ", round(Total_BS_pos/RDT_and_bs_done_12_24* 100, 1), "% of the samples")
+
+## RDT pos and BS pos 
+
+RDT_pos_BS_pos_12 <- filter( Household_data_12, rdtrslt == 1 & BSdich == 1)
+
+RDT_pos_BS_pos_24 <- filter(Household_data_24, rdtrslt == 1 & BSdich == 1)
+
+Total_RDT_pos_BS_pos_12_24 <- nrow(RDT_pos_BS_pos_12) + nrow(RDT_pos_BS_pos_24)
+
+
+paste0("Total number of RDT Positive and Microscopy Positive samples in LLN12 and LLN24 :", Total_RDT_pos_BS_pos_12_24)
+```
+
+
+
+## More tables: Proportion of discordant samples out of the total of the BS positive samples from both LLNE12 and LLNE 24 studies
+```{r}
+
+## Proportion discordant
+
+Prop_discordant_overall <- round((nrow(RDT_Neg_and_BS_pos_12)+ nrow(RDT_Neg_and_BS_pos_24))/Total_BS_pos * 100, 1)
+
+
+paste0(" Proportion of RDT negative and BS positive samples in both LLN12 and LLN24 samples: ", Prop_discordant_overall)
+
+```
+
+
+## Random samples :
+* RDT positive 
+* RDT negative and BS negative
+```{r}
+# Import list of random samples
+sample_df_RDT_pos <-read_csv("../../data_out/160_Random_sample_RDT_pos.csv") %>% 
+transmute(rdtrslt, BSdich, `Study Subject` = fpbarcode1 )
+
+sample_df_RDT_neg <- read_xlsx("../../data_out/320_Random_Samples_LN12_25102023.xlsx", sheet = "Sheet2") %>% 
+transmute(rdtrslt, BSdich, `Study Subject` = fpbarcode1 )
+
+Random_samples <- rbind(sample_df_RDT_pos, sample_df_RDT_neg)
+
+# Merge with sampledb and get barcodes of Random list of samples
+
+sampledb <- read_csv("../../databases/data-2024-02-05 (1).csv")
+
+# merge sampledb with random sample list
+
+merged_sampledb_rdt_bs <- Random_samples %>% 
+  left_join(sampledb, by = join_by(`Study Subject`)) %>% 
+  transmute(rdtrslt, BSdich, `Study Subject`, Barcode = as.character(Barcode))
+
+
+# import list of samples on which var-ats qpcr was performed; shared by Innocent
+
+# var_ats_performed <- read_csv("../../data_in/LN2 12 moonths samples with qPCR data..xlsx.csv")
+
+var_ats_performed_2 <- read_xls("../../data_in/varATS_LN2_24_004_25_01_24.xls", sheet = "Results", col_names = FALSE)
+
+var_ats_performed_2 <- var_ats_performed_2[46:142, ]
+
+colnames(var_ats_performed_2) <- var_ats_performed_2[2, ]
+
+var_ats_performed_2 <- var_ats_performed_2[3:97, ]
+
+var_ats_performed_2 <- var_ats_performed_2 %>% 
+  select(`Sample Name`, Quantity)
+  
+var_ats_performed_3 <- read_xls("../../data_in/varATS_LN2_24_005_29_01_2024.xls", sheet = "Results", col_names = FALSE)
+
+var_ats_performed_3 <- var_ats_performed_3[46:108, ]
+
+colnames(var_ats_performed_3) <- var_ats_performed_3[2, ]
+
+var_ats_performed_3 <- var_ats_performed_3[3:62, ]
+
+var_ats_performed_3 <-var_ats_performed_3 %>% 
+  select(`Sample Name`, Quantity)
+
+var_ats_bound <-rbind(var_ats_performed_2, var_ats_performed_3)
+
+var_ats_bound <- var_ats_bound %>% 
+  filter(`Sample Name` != "Neg ctrl") %>% 
+  rename(Barcode = `Sample Name` ) %>% 
+  mutate(Qpcr_status = 1)
+
+# Merge Random samples with var ATS Qpcr data
+
+rdt_bs_qpcr_data <- merged_sampledb_rdt_bs  %>% 
+  left_join(var_ats_bound, by= join_by(`Barcode`))
+
+# Identify those without qpcrdata; these should be in the LLNEUP ppcr database
+
+no_qpcr_data <- rdt_bs_qpcr_data[is.na(rdt_bs_qpcr_data$Qpcr_status), ]
+no_qpcr_data <- no_qpcr_data %>% 
+  select(-Quantity)
+
+random_samples_with_qpcr_data <- rdt_bs_qpcr_data[!is.na(rdt_bs_qpcr_data$Qpcr_status), ]
+
+random_samples_with_qpcr_data <- random_samples_with_qpcr_data %>% 
+  mutate(Quantity = ifelse(is.na(Quantity), 0, Quantity))
+## Here some samples where CT values that were undetermined  are recorded as "NA" from the biorad machine. Rather than NA, making their parasite density 0.
+
+# Import LLNEUP database
+
+LN_UP_db <- read_csv("../../databases/Lineup2MergedQPCRResults.csv") %>% 
+  transmute( Barcode = as.character(`SampleName`) , Quantity, `Study Subject` )
+
+# Merge in LLNEUP db
+
+qpcr_LN_UP_db <- no_qpcr_data %>% 
+  left_join(LN_UP_db, by = join_by(Barcode, `Study Subject`)) %>% 
+  mutate(Qpcr_status = ifelse(is.na(Quantity), 0, 1))
+
+qpcr_data_from_LLN_db <- filter(qpcr_LN_UP_db, Qpcr_status == 1)
+
+no_qpcr_data_final <- filter(qpcr_LN_UP_db, Qpcr_status == 0)
+
+# save
+# write_csv(no_qpcr_data_final, "../../data_out/no_qpcr_data_902204.csv")
+
+# Lab team found the the qpcr data for the six samples above
+
+qpcr_data_six_samples <- read_csv("../../data_in/no_qpcr_data_902204_from_lab.csv") %>% 
+  transmute(rdtrslt, BSdich, `Study Subject`, Barcode, Quantity =`Quantity...10`, Qpcr_status = 1)
+```
+
+## Now bind all the df's for the random samples into one
+```{r}
+
+All_Random_samples <- rbind(random_samples_with_qpcr_data, qpcr_data_from_LLN_db, qpcr_data_six_samples)
+
+All_Random_samples$Quantity <- round(as.numeric(All_Random_samples$Quantity), digits = 0) # round parasite density
+
+
+# Ensure that we don't have any duplicates
+
+nrow(unique(All_Random_samples)) # 320
+any(duplicated(All_Random_samples$`Study Subject`)) #FALSE
+any(duplicated(All_Random_samples$Barcode)) # FALSE
+# Great!
+```
+
+## Summarise data for 320 random samples
+```{r}
+
+All_Random_samples_merged <- merge(All_Random_samples, Household_data_12, by.x = c("rdtrslt", "BSdich", "Study Subject" ), by.y = c("rdtrslt", "BSdich","fpbarcode1"), all.y = FALSE) 
+
+All_Random_samples_sub <- All_Random_samples_merged %>% 
+  select(rdtrslt, Region, mrccode,  BSdich, `Study Subject`, Quantity, ageyrs, temperature, gender, Barcode ) %>% 
+  mutate(Quantity = round(Quantity))
+
+summary(All_Random_samples_sub)
+
+ggplot(All_Random_samples_sub, aes(x = Quantity)) +
+  geom_histogram(bins = 30) +
+  scale_x_log10()
+
+summary(All_Random_samples_sub$Quantity)
+
+# Let me come up with a summary for parasite density
+
+less_than_or_equal_100_random <- subset(All_Random_samples_sub, Quantity <= 100)
+
+n_less_100 <-nrow(less_than_or_equal_100_random) # 229
+
+paste0( n_less_100," have parasite density below less or equal to 100, which is ", round(n_less_100/ nrow(All_Random_samples_sub)*100) ,"% of the total number of random samples" )
+
+summary(less_than_or_equal_100_random$Quantity)
+
+ # Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+  # 0.000   0.000   0.000   3.541   0.000  96.000 
+ 
+ggplot(less_than_or_equal_100_random, aes( Quantity)) +
+geom_histogram()
+
+IQR(less_than_or_equal_100_random$Quantity) # 0
+
+```
+
+
+
+```{r}
+greater_than_100 <-subset(All_Random_samples_sub, Quantity > 100)
+
+nrow(greater_than_100) # 91
+
+summary(greater_than_100$Quantity)
+
+ # Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+    # 109     936    4967  134852   13510 4539762 
+
+IQR(greater_than_100$Quantity) #
+
+# Age
+
+less_or_equal_to_5_random <- subset(All_Random_samples_sub, ageyrs <= 5)
+
+greater_than_5_random <- subset(All_Random_samples_sub, ageyrs > 5)
+
+# Gender
+proportion_gender_random <-All_Random_samples_sub %>% 
+  count(gender) %>% 
+  mutate(proportion = round(n/sum(n)*100)) 
+    
+ # Fever 
+
+fever_random <- subset(All_Random_samples_sub, temperature >= 37.5)
+
+summary_table_random <- data.frame( 
+N = nrow(All_Random_samples_sub),
+Age_less_5 = nrow(less_or_equal_to_5_random),
+Prop_less_5 = round(nrow(less_or_equal_to_5_random)/nrow(All_Random_samples_sub)*100),
+Age_greater_5 = nrow(greater_than_5_random),
+Prop_greater_5 = round(nrow(greater_than_5_random)/nrow(All_Random_samples_sub)*100),
+Median_age = median(All_Random_samples_sub$ageyrs),
+IQR_age = IQR(All_Random_samples_sub$ageyrs),
+Gender = proportion_gender_random[1,2],
+Prop_gender = proportion_gender_random[1,3],
+Fever = nrow(fever_random),
+Prop_fever = round(nrow(fever_random)/nrow(All_Random_samples_sub)* 100),
+Parasitemia_less_or_equal_100 =  nrow(less_than_or_equal_100_random),
+Prop_parasitemia_less_or_equal_100 = round(nrow(less_than_or_equal_100_random)/nrow(All_Random_samples_sub) * 100),
+Median_parasite_density = median(All_Random_samples_sub$Quantity),
+IQR_parasite_density = IQR(All_Random_samples_sub$Quantity),
+row.names = "Random_samples"
+)
+
+names(summary_table_random) <- c("N","Age ≤  5", "Prop ≤  5yrs", "Age > 5","Prop >5", "Median_age", "IQR_age", "Gender (M)", "Proportion Gender", "Fever", "Proportion Fever", "Parasitemia ≤ 100", "Proportion Parasitemia < 100", "Median_parasite_density", "IQR_parasite_density " )
+
+# save
+
+# write_csv(summary_table_random, "../../data_out/Table_characteristics_LLNEUP_random_samples_summary_28_Feb_2024.csv")
+```
+
+
+Generate list of Random samples for sps PCR
+```{r}
+random_sample_var_ATS_neg <-All_Random_samples_sub %>% 
+  filter(Quantity <= 1) 
+  
+# Save
+
+write_csv(random_sample_var_ATS_neg, "../../data_out/Random_samples_varATS_neg.csv")
+
+```
+
+### Generate a histogram showing the causes of discordant RDT and Microscopy results
+```{r}
+non_pf_species <- 32
+false_positive_microscopy_results <- 43
+low_parasite_density_less_100 <- 31
+parasite_density_more_100 <- 59
+hrp2_deletions <- 1
+
+
+
+```
+
+
+```{r print_date_and_time}
+Sys.time()
+```
+
+```{r print_session_info}
+# sessionInfo()
+devtools::session_info()
+```
