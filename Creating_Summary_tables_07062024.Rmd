@@ -63,11 +63,28 @@ paste0("RDT and BS were performed on ", nrow(RDT_BS_done), " from the LLINEUP su
 
 # No of ids with positive BS
 BS_pos <- Combined_lineup_data %>% 
-  filter(BSdich == "Positive") 
+  filter(BSdich == "Positive" & rdtdone == "Yes") 
 
 pos_bs <-unique(nrow(BS_pos))
 
 paste0("No of ids with positive BS in LLINEUP surveys:", pos_bs)
+
+# Get a summary of how RDT results for those with positive BS
+
+table(BS_pos$rdtrslt)
+
+```
+### Extract microscopy negative samples
+```{r}
+Bs_neg <-Combined_lineup_data %>% 
+  filter(BSdich == "Negative" & rdtdone == "Yes") 
+
+neg_bs <-unique(nrow(Bs_neg))
+
+paste0("No of ids with Negative BS in LLINEUP surveys:", neg_bs)
+# Get a summary of RDT results for BS negative samples
+table(Bs_neg$rdtrslt)
+
 
 ```
 

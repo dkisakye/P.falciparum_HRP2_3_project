@@ -589,6 +589,8 @@ studies</h1>
 number of samples from surveys which had both RDT and BS done</a></li>
 <li><a href="#extract-the-bs-positive-samples-from-survey-data" id="toc-extract-the-bs-positive-samples-from-survey-data">Extract the BS
 positive samples from survey data</a></li>
+<li><a href="#extract-microscopy-negative-samples" id="toc-extract-microscopy-negative-samples">Extract microscopy negative
+samples</a></li>
 <li><a href="#now-find-the-discordant-samples-ie-bs-positive-and-rdt-negative" id="toc-now-find-the-discordant-samples-ie-bs-positive-and-rdt-negative">Now
 find the discordant samples ie BS positive and RDT negative</a></li>
 <li><a href="#summarise-characteristics-of-the-discordant-samples-from-both-llineup12-and-llineup24-surveys" id="toc-summarise-characteristics-of-the-discordant-samples-from-both-llineup12-and-llineup24-surveys">Summarise
@@ -651,12 +653,33 @@ paste0(&quot;RDT and BS were performed on &quot;, nrow(RDT_BS_done), &quot; from
 <h3>Extract the BS positive samples from survey data</h3>
 <pre class="r"><code># No of ids with positive BS
 BS_pos &lt;- Combined_lineup_data %&gt;% 
-  filter(BSdich == &quot;Positive&quot;) 
+  filter(BSdich == &quot;Positive&quot; &amp; rdtdone == &quot;Yes&quot;) 
 
 pos_bs &lt;-unique(nrow(BS_pos))
 
 paste0(&quot;No of ids with positive BS in LLINEUP surveys:&quot;, pos_bs)</code></pre>
-<pre><code>## [1] &quot;No of ids with positive BS in LLINEUP surveys:2684&quot;</code></pre>
+<pre><code>## [1] &quot;No of ids with positive BS in LLINEUP surveys:1988&quot;</code></pre>
+<pre class="r"><code># Get a summary of how RDT results for those with positive BS
+
+table(BS_pos$rdtrslt)</code></pre>
+<pre><code>## 
+##  Skipped Negative Positive 
+##        0      166     1822</code></pre>
+</div>
+<div id="extract-microscopy-negative-samples" class="section level3">
+<h3>Extract microscopy negative samples</h3>
+<pre class="r"><code>Bs_neg &lt;-Combined_lineup_data %&gt;% 
+  filter(BSdich == &quot;Negative&quot; &amp; rdtdone == &quot;Yes&quot;) 
+
+neg_bs &lt;-unique(nrow(Bs_neg))
+
+paste0(&quot;No of ids with Negative BS in LLINEUP surveys:&quot;, neg_bs)</code></pre>
+<pre><code>## [1] &quot;No of ids with Negative BS in LLINEUP surveys:4366&quot;</code></pre>
+<pre class="r"><code># Get a summary of RDT results for BS negative samples
+table(Bs_neg$rdtrslt)</code></pre>
+<pre><code>## 
+##  Skipped Negative Positive 
+##        0     2477     1889</code></pre>
 </div>
 <div id="now-find-the-discordant-samples-ie-bs-positive-and-rdt-negative" class="section level3">
 <h3>Now find the discordant samples ie BS positive and RDT negative</h3>
@@ -670,9 +693,9 @@ no_discordant &lt;-unique(nrow(Discordant))
 proportion_discordant_12 &lt;- nrow(Discordant)/nrow(BS_pos) *100
  
 proportion_discordant_12_rounded &lt;-print(round(proportion_discordant_12, 2))</code></pre>
-<pre><code>## [1] 6.18</code></pre>
+<pre><code>## [1] 8.35</code></pre>
 <pre class="r"><code>paste0(&quot;No of discordant samples is &quot;, no_discordant, &quot; and &quot; , proportion_discordant_12_rounded,&quot;% of all BS positive samples&quot;  )</code></pre>
-<pre><code>## [1] &quot;No of discordant samples is 166 and 6.18% of all BS positive samples&quot;</code></pre>
+<pre><code>## [1] &quot;No of discordant samples is 166 and 8.35% of all BS positive samples&quot;</code></pre>
 </div>
 <div id="summarise-characteristics-of-the-discordant-samples-from-both-llineup12-and-llineup24-surveys" class="section level3">
 <h3>Summarise characteristics of the discordant samples from both
@@ -1043,7 +1066,7 @@ median parasite densities between concordant and discordant samples</h3>
 ## difference in location 
 ##                   1720</code></pre>
 <pre class="r"><code>Sys.time()</code></pre>
-<pre><code>## [1] &quot;2024-06-07 20:35:54 EAT&quot;</code></pre>
+<pre><code>## [1] &quot;2024-06-10 15:20:50 EAT&quot;</code></pre>
 <pre class="r"><code># sessionInfo()
 devtools::session_info()</code></pre>
 <pre><code>## ─ Session info ───────────────────────────────────────────────────────────────
@@ -1056,7 +1079,7 @@ devtools::session_info()</code></pre>
 ##  collate  en_US.UTF-8
 ##  ctype    en_US.UTF-8
 ##  tz       Africa/Kampala
-##  date     2024-06-07
+##  date     2024-06-10
 ##  pandoc   3.1.1 @ /Applications/RStudio.app/Contents/Resources/app/quarto/bin/tools/ (via rmarkdown)
 ## 
 ## ─ Packages ───────────────────────────────────────────────────────────────────
