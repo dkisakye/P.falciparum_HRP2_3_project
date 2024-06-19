@@ -76,10 +76,14 @@ pie_1
 ####### Digital PCR data ############
 #####################################
 
-category_dPCR <-c("Low quality DNA", "Pfhrp2+/pfhrp3+",
-             "Pfhrp2+/pfhrp3-", "Pfhrp2-/pfhrp3+",
-             "Pfhrp2-/pfhrp3-")
-counts_dPCR <- c(13, 76, 1, 0, 0)
+# category_dPCR <-c("Low quality DNA", "Pfhrp2+/pfhrp3+",
+             # "Pfhrp2+/pfhrp3-", "Pfhrp2-/pfhrp3+",
+             # "Pfhrp2-/pfhrp3-")
+
+category_dPCR <-c("Pfhrp2+/pfhrp3+", "Pfhrp2+/pfhrp3-")
+
+# counts_dPCR <- c(13, 76, 1, 0, 0)
+ counts_dPCR <-c(76, 1)
 
 df_digital_PCR <-data.frame(
   category = category_dPCR,
@@ -88,7 +92,7 @@ df_digital_PCR <-data.frame(
   )
 
 df_digital_PCR <-filter(df_digital_PCR,
-                        counts > 0)
+                        counts_dPCR > 0)
 
 ##### Figures for digital PCR data #####
 
@@ -98,7 +102,9 @@ df_digital_PCR$category <- reorder(df_digital_PCR$category, df_digital_PCR$propo
 
 # Assign pink shades based on the reordered levels
 
-pink_shades <- c("#c51b8a", "#fa9fb5", "#feebe2" )
+# pink_shades <- c("#c51b8a", "#fa9fb5", "#feebe2" )
+
+pink_shades <-c("#c51b8a", "#feebe2")
 
 # Bar Plot 2 for Digital PCR data 
 
@@ -144,7 +150,7 @@ pie_2
 
 #save
 # ggsave("../../figures/Pie_charts/Pie_2_digital_PCR_results.pdf",width = 6, height = 4, dpi = 300 )
-
+ggsave("../../figures/Pie_charts/Pie_2_digital_PCR_results_updated.pdf",width = 6, height = 4, dpi = 300 )
 
 #####################################
 ####### Species PCR data ############
